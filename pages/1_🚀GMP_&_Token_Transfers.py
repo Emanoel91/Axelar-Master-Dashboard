@@ -274,6 +274,7 @@ with col5:
 with col6:
     st.markdown(card_style.format(label="⛽Total Gas Fees", value=f"${df_crosschain_stats['Total Gas Fees'][0]:,}"), unsafe_allow_html=True)
 
+st.markdown("<br>", unsafe_allow_html=True)
 st.markdown(
     """
     <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
@@ -282,7 +283,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-    
+
 # --- Row 3: Transactions Over Time -------------------------------------------------------------------------------------------------------------------------------------------
 fig1 = go.Figure()
 fig1.add_trace(go.Bar(x=grouped['period'], y=grouped['gmp_num_txs'], name='GMP', marker_color='#ff7400'))
