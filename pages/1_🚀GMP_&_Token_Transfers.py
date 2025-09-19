@@ -249,21 +249,21 @@ total_volume = grouped['gmp_volume'].sum() + grouped['transfers_volume'].sum()
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.markdown(card_style.format(label="Transfers Count", value=f"{total_num_txs:,} Txns"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="🚀Number of Cross-Chain Transfers", value=f"{total_num_txs:,} Txns"), unsafe_allow_html=True)
 with col2:
-    st.markdown(card_style.format(label="Transfers Volume", value=f"${total_volume:,.0f}"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="💸Volume of Cross-Chain Transfers", value=f"${total_volume:,.0f}"), unsafe_allow_html=True)
 with col3:
-    st.markdown(card_style.format(label="Unique Users", value=f"{df_crosschain_stats['Number of Users'][0]:,} Wallets"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="👥Number of Unique Users", value=f"{df_crosschain_stats['Number of Users'][0]:,} Wallets"), unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 col4, col5, col6 = st.columns(3)
 with col4:
-    st.markdown(card_style.format(label="Unique Chains", value=f"{df_unique_chains_stats['Unique Chains'][0]:,}"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="⛓Number of Supported Chains", value=f"{df_unique_chains_stats['Unique Chains'][0]:,}"), unsafe_allow_html=True)
 with col5:
-    st.markdown(card_style.format(label="Unique Paths", value=f"{df_crosschain_stats['Unique Paths'][0]:,}"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="🔀Number of Cross-Chain Paths", value=f"{df_crosschain_stats['Unique Paths'][0]:,}"), unsafe_allow_html=True)
 with col6:
-    st.markdown(card_style.format(label="Total Gas Fees", value=f"${df_crosschain_stats['Total Gas Fees'][0]:,}"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="⛽Total Gas Fees", value=f"${df_crosschain_stats['Total Gas Fees'][0]:,}"), unsafe_allow_html=True)
     
 # --- Row 2: Transactions Over Time -------------------------------------------------------------------------------------------------------------------------------------------
 fig1 = go.Figure()
