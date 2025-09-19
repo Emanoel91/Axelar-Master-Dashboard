@@ -12,7 +12,7 @@ st.markdown(
     """
     <div style="display: flex; align-items: center; gap: 15px;">
         <img src="https://axelarscan.io/logos/logo.png" alt="axelar" style="width:60px; height:60px;">
-        <h1 style="margin: 0;">Axelar: Crosschain Interoperability Overview</h1>
+        <h1 style="margin: 0;">Axelar Master Dashboard</h1>
     </div>
     """,
     unsafe_allow_html=True
