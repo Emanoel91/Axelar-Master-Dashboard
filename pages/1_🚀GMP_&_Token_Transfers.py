@@ -467,7 +467,7 @@ total_gmp_vol = grouped['gmp_volume'].sum()
 total_transfers_vol = grouped['transfers_volume'].sum()
 
 tx_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Count": [total_gmp_tx, total_transfers_tx]})
-donut_tx = px.pie(tx_df, names="Service", values="Count", color="Service", hole=0.5, title="Share of Total Transactions By Service", color_discrete_map={
+donut_tx = px.pie(tx_df, names="Service", values="Count", color="Service", hole=0.5, title="Total Transactions by Service", color_discrete_map={
         "GMP": "#ff7400",
         "Token Transfers": "#00a1f7"
     }
@@ -475,7 +475,7 @@ donut_tx = px.pie(tx_df, names="Service", values="Count", color="Service", hole=
 donut_tx.update_traces(textinfo='label+percent', showlegend=False)
 
 vol_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Volume": [total_gmp_vol, total_transfers_vol]})
-donut_vol = px.pie(vol_df, names="Service", values="Volume", color="Service", hole=0.5, title="Share of Total Volume By Service", color_discrete_map={
+donut_vol = px.pie(vol_df, names="Service", values="Volume", color="Service", hole=0.5, title="Total Volume by Service", color_discrete_map={
         "GMP": "#ff7400",
         "Token Transfers": "#00a1f7"
     }
