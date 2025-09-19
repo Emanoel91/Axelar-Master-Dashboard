@@ -408,33 +408,7 @@ with col2:
 with col3:
     st.plotly_chart(fig5, use_container_width=True)
 
-  
-# --- Row 6: Donut Charts -------------------------------------------------------------------------------------------------------------------------------------------------------
-total_gmp_tx = grouped['gmp_num_txs'].sum()
-total_transfers_tx = grouped['transfers_num_txs'].sum()
-
-total_gmp_vol = grouped['gmp_volume'].sum()
-total_transfers_vol = grouped['transfers_volume'].sum()
-
-tx_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Count": [total_gmp_tx, total_transfers_tx]})
-donut_tx = px.pie(tx_df, names="Service", values="Count", color="Service", hole=0.5, title="Share of Total Transactions By Service", color_discrete_map={
-        "GMP": "#ff7400",
-        "Token Transfers": "#00a1f7"
-    }
-)
-donut_tx.update_traces(textinfo='label+percent', showlegend=False)
-
-vol_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Volume": [total_gmp_vol, total_transfers_vol]})
-donut_vol = px.pie(vol_df, names="Service", values="Volume", color="Service", hole=0.5, title="Share of Total Volume By Service", color_discrete_map={
-        "GMP": "#ff7400",
-        "Token Transfers": "#00a1f7"
-    }
-)
-donut_vol.update_traces(textinfo='label+percent', showlegend=False)
-col5, col6 = st.columns(2)
-col5.plotly_chart(donut_tx, use_container_width=True)
-col6.plotly_chart(donut_vol, use_container_width=True)
-# ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------    
 @st.cache_data
 def load_stats_chain_fee_user_path(start_date, end_date):
     
@@ -484,7 +458,40 @@ group by 1
 
 # === Load Data ===================================================================
 df_stats_chain_fee_user_path = load_stats_chain_fee_user_path(start_date, end_date)
-# === Charts: User, Fee, Path =====================================================
+  
+# --- Row 6: Donut Charts -------------------------------------------------------------------------------------------------------------------------------------------------------
+total_gmp_tx = grouped['gmp_num_txs'].sum()
+total_transfers_tx = grouped['transfers_num_txs'].sum()
+
+total_gmp_vol = grouped['gmp_volume'].sum()
+total_transfers_vol = grouped['transfers_volume'].sum()
+
+tx_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Count": [total_gmp_tx, total_transfers_tx]})
+donut_tx = px.pie(tx_df, names="Service", values="Count", color="Service", hole=0.5, title="Share of Total Transactions By Service", color_discrete_map={
+        "GMP": "#ff7400",
+        "Token Transfers": "#00a1f7"
+    }
+)
+donut_tx.update_traces(textinfo='label+percent', showlegend=False)
+
+vol_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Volume": [total_gmp_vol, total_transfers_vol]})
+donut_vol = px.pie(vol_df, names="Service", values="Volume", color="Service", hole=0.5, title="Share of Total Volume By Service", color_discrete_map={
+        "GMP": "#ff7400",
+        "Token Transfers": "#00a1f7"
+    }
+)
+donut_vol.update_traces(textinfo='label+percent', showlegend=False)
+
+# ------------------------
+fig_stacked_fee = px.bar(df_stats_chain_fee_user_path, x="Service", y="Total Gas Fees", color="Service", title="Total Gas Fees by Service", color_discrete_map=color_map)
+fig_stacked_fee.update_layout(barmode="stack", yaxis_title="$USD", xaxis_title="")
+
+col5, col6, col7 = st.columns(3)
+col5.plotly_chart(donut_tx, use_container_width=True)
+col6.plotly_chart(donut_vol, use_container_width=True)
+col7.plotly_chart(fig_stacked_fee, use_container_width=True)
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 col1, col2, col3 = st.columns(3)
 
 with col1:
