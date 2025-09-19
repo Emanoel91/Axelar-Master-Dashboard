@@ -430,7 +430,7 @@ donut_vol = px.pie(vol_df, names="Service", values="Volume", color="Service", ho
         "Token Transfers": "#00a1f7"
     }
 )
-donut_tx.update_layout(showlegend=False, textinfo='label+percent')
+donut_vol.update_traces(textinfo='label+percent', showlegend=False)
 col5, col6 = st.columns(2)
 col5.plotly_chart(donut_tx, use_container_width=True)
 col6.plotly_chart(donut_vol, use_container_width=True)
