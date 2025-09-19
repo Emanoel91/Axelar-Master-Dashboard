@@ -417,18 +417,38 @@ total_gmp_vol = grouped['gmp_volume'].sum()
 total_transfers_vol = grouped['transfers_volume'].sum()
 
 tx_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Count": [total_gmp_tx, total_transfers_tx]})
-donut_tx = px.pie(tx_df, names="Service", values="Count", color="Service", hole=0.5, title="Share of Total Transactions By Service", color_discrete_map={
+donut_tx = px.pie(
+    tx_df,
+    names="Service",
+    values="Count",
+    color="Service",
+    hole=0.5,
+    title="Share of Total Transactions By Service",
+    color_discrete_map={
         "GMP": "#ff7400",
         "Token Transfers": "#00a1f7"
     }
 )
+donut_tx.update_traces(textposition='inside', textinfo='label+percent')
+donut_tx.update_layout(showlegend=False)
 
-vol_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Volume": [total_gmp_vol, total_transfers_vol]})
-donut_vol = px.pie(vol_df, names="Service", values="Volume", color="Service", hole=0.5, title="Share of Total Volume By Service", color_discrete_map={
+# Volume Pie (Donut)
+donut_vol = px.pie(
+    vol_df,
+    names="Service",
+    values="Volume",
+    color="Service",
+    hole=0.5,
+    title="Share of Total Volume By Service",
+    color_discrete_map={
         "GMP": "#ff7400",
         "Token Transfers": "#00a1f7"
     }
 )
+donut_vol.update_traces(textposition='inside', textinfo='label+percent')
+donut_vol.update_layout(showlegend=False)
+
+# Display in Streamlit
 col5, col6 = st.columns(2)
 col5.plotly_chart(donut_tx, use_container_width=True)
 col6.plotly_chart(donut_vol, use_container_width=True)
