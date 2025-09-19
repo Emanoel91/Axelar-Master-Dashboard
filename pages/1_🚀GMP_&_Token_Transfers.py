@@ -385,7 +385,18 @@ fig4.add_trace(go.Bar(x=df_norm_vol['period'], y=df_norm_vol['gmp_norm'], name='
 fig4.add_trace(go.Bar(x=df_norm_vol['period'], y=df_norm_vol['transfers_norm'], name='Token Transfers', marker_color='#00a1f7'))
 fig4.update_layout(barmode='stack', title="Normalized Volume by Service Over Time", yaxis_tickformat='%', legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
 
-col1, col2 = st.columns(2)
+df_norm = df_staking_over_time.copy()
+df_norm['total_per_date'] = df_norm.groupby('Date')['Txn Count'].transform('sum')
+df_norm['normalized'] = df_norm['Txn Count'] / df_norm['total_per_date']
+
+fig5 = px.bar(df_stats_overtime, x="Date", y="Number of Users", color="Service", title="Users Count per Month (%Normalized)", 
+                              text=df_stats_overtime["Number of Users"].astype(str), color_discrete_map=color_map)
+fig5.update_layout(barmode='stack', xaxis_title="", yaxis_title="%", yaxis=dict(tickformat='%'), legend=dict(orientation="h", yanchor="bottom", y=1.02, 
+                                    xanchor="center", x=0.5, title=""))
+fig5.update_traces(textposition='inside')
+st.plotly_chart(fig5, use_container_width=True)
+
+col1, col2, col3 = st.columns(3)
 
 with col1:
     st.plotly_chart(fig3, use_container_width=True)
@@ -393,6 +404,8 @@ with col1:
 with col2:
     st.plotly_chart(fig4, use_container_width=True)
 
+with col3:
+    st.plotly_chart(fig5, use_container_width=True)
 
   
 # --- Row 5: Donut Charts -------------------------------------------------------------------------------------------------------------------------------------------------------
