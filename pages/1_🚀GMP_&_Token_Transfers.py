@@ -485,11 +485,11 @@ donut_vol.update_traces(textinfo='label+percent', showlegend=False)
 # ------------------------
 fig_stacked_fee = px.bar(df_stats_chain_fee_user_path, x="Service", y="Total Gas Fees", color="Service", title="Total Gas Fees by Service", color_discrete_map=color_map)
 fig_stacked_fee.update_layout(barmode="stack", yaxis_title="$USD", xaxis_title="")
-fig_stacked_fee.update_traces(textinfo='label+percent', showlegend=False)
+fig_stacked_fee.update_traces(text=df_stats_chain_fee_user_path["Total Gas Fees"], texttemplate='%{text}', textposition='inside', showlegend=False) 
 # ------------------------
 fig_stacked_user = px.bar(df_stats_chain_fee_user_path, x="Service", y="Number of Users", color="Service", title="Total Number of Users by Service", color_discrete_map=color_map)
 fig_stacked_user.update_layout(barmode="stack", yaxis_title="wallet count", xaxis_title="")
-fig_stacked_user.update_traces(textinfo='label+percent', showlegend=False)    
+fig_stacked_user.update_traces(text=df_stats_chain_fee_user_path["Number of Users"], texttemplate='%{text}', textposition='inside', showlegend=False)    
 
 col5, col6, col7, col8 = st.columns(4)
 col5.plotly_chart(donut_tx, use_container_width=True)
