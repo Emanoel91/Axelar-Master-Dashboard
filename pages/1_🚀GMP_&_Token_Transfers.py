@@ -357,7 +357,7 @@ with col1:
 
 with col2:
     fig_grouped_user = px.bar(df_stats_overtime, x="Date", y="Number of Users", color="Service", barmode="group", 
-                              title="Number of Users by Service Over Time", color_discrete_map=color_map)
+                              title="Number of Active Users by Service Over Time", color_discrete_map=color_map)
     fig_grouped_user.update_layout(yaxis_title="Wallet count", xaxis_title="", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5, title=""))
     st.plotly_chart(fig_grouped_user, use_container_width=True)
 
@@ -409,7 +409,7 @@ with col3:
     st.plotly_chart(fig5, use_container_width=True)
 
   
-# --- Row 5: Donut Charts -------------------------------------------------------------------------------------------------------------------------------------------------------
+# --- Row 6: Donut Charts -------------------------------------------------------------------------------------------------------------------------------------------------------
 total_gmp_tx = grouped['gmp_num_txs'].sum()
 total_transfers_tx = grouped['transfers_num_txs'].sum()
 
@@ -424,7 +424,6 @@ donut_tx = px.pie(tx_df, names="Service", values="Count", color="Service", hole=
 )
 
 vol_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Volume": [total_gmp_vol, total_transfers_vol]})
-
 donut_vol = px.pie(vol_df, names="Service", values="Volume", color="Service", hole=0.5, title="Share of Total Volume By Service", color_discrete_map={
         "GMP": "#ff7400",
         "Token Transfers": "#00a1f7"
