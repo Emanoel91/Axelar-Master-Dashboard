@@ -103,6 +103,15 @@ with col2:
 with col3:
     end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30"))
 
+st.markdown(
+    """
+    <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Axelar Cross-Chain Transfers Overview</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 # --- Fetch Data from API --------------------------------------------------------------------------------------------
 @st.cache_data
 def load_data():
