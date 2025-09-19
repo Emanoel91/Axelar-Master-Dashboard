@@ -111,7 +111,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
+st.markdown("<br>", unsafe_allow_html=True)
 # --- Fetch Data from API --------------------------------------------------------------------------------------------
 @st.cache_data
 def load_data():
