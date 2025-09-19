@@ -424,11 +424,11 @@ donut_tx = px.pie(tx_df, names="Service", values="Count", color="Service", hole=
 )
 donut_tx.update_layout(showlegend=False)
 
-vol_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Volume": [total_gmp_vol, total_transfers_vol]})
+vol_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Volume": [total_gmp_vol, total_transfers_vol]}, textinfo='label+percent')
 donut_vol = px.pie(vol_df, names="Service", values="Volume", color="Service", hole=0.5, title="Share of Total Volume By Service", color_discrete_map={
         "GMP": "#ff7400",
         "Token Transfers": "#00a1f7"
-    }, textinfo='label+percent'
+    }
 )
 donut_tx.update_layout(showlegend=False)
 col5, col6 = st.columns(2)
