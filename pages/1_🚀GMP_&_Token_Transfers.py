@@ -288,18 +288,6 @@ with col1:
 with col2:
     st.plotly_chart(fig2, use_container_width=True)
 
-# --- Row 3: Normalized chart% ----------------------------------------------------------------------------------------------------------------------------------------------------------
-# -- Normalized stacked bar
-df_norm_tx = grouped.copy()
-df_norm_tx['gmp_norm'] = df_norm_tx['gmp_num_txs'] / df_norm_tx['total_txs']
-df_norm_tx['transfers_norm'] = df_norm_tx['transfers_num_txs'] / df_norm_tx['total_txs']
-
-fig3 = go.Figure()
-fig3.add_trace(go.Bar(x=df_norm_tx['period'], y=df_norm_tx['gmp_norm'], name='GMP', marker_color='#ff7400'))
-fig3.add_trace(go.Bar(x=df_norm_tx['period'], y=df_norm_tx['transfers_norm'], name='Token Transfers', marker_color='#00a1f7'))
-fig3.update_layout(barmode='stack', title="Normalized Transactions by Service Over Time", yaxis_tickformat='%', 
-                   legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
-
 # --- Row 4 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
 def load_stats_overtime(timeframe, start_date, end_date):
@@ -374,6 +362,16 @@ with col2:
     st.plotly_chart(fig_grouped_user, use_container_width=True)
 
 # --- Row 5 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -- Normalized stacked bar
+df_norm_tx = grouped.copy()
+df_norm_tx['gmp_norm'] = df_norm_tx['gmp_num_txs'] / df_norm_tx['total_txs']
+df_norm_tx['transfers_norm'] = df_norm_tx['transfers_num_txs'] / df_norm_tx['total_txs']
+
+fig3 = go.Figure()
+fig3.add_trace(go.Bar(x=df_norm_tx['period'], y=df_norm_tx['gmp_norm'], name='GMP', marker_color='#ff7400'))
+fig3.add_trace(go.Bar(x=df_norm_tx['period'], y=df_norm_tx['transfers_norm'], name='Token Transfers', marker_color='#00a1f7'))
+fig3.update_layout(barmode='stack', title="Normalized Transactions by Service Over Time", yaxis_tickformat='%', 
+                   legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
 
 # -- Normalized Charts
 df_norm_vol = grouped.copy()
