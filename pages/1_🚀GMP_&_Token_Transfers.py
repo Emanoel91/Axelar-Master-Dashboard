@@ -516,3 +516,12 @@ col6.plotly_chart(donut_vol, use_container_width=True)
 col7.plotly_chart(fig_stacked_fee, use_container_width=True)
 col8.plotly_chart(fig_stacked_user, use_container_width=True)   
 
+st.markdown(
+    """
+    <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Analysis of Cross-Chain Transfers By Path Type</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.markdown("<br>", unsafe_allow_html=True)
