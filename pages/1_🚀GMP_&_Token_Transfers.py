@@ -136,7 +136,7 @@ grouped = df.groupby('period').agg({
 grouped['total_txs'] = grouped['gmp_num_txs'] + grouped['transfers_num_txs']
 grouped['total_volume'] = grouped['gmp_volume'] + grouped['transfers_volume']
 
-# --- Functions -----------------------------------------------------------------------------------------------------
+# --- Row 1, 2 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # === Number of Unique Chains ===========================
 @st.cache_data
 def load_unique_chains_stats(start_date, end_date):
@@ -265,7 +265,7 @@ with col5:
 with col6:
     st.markdown(card_style.format(label="⛽Total Gas Fees", value=f"${df_crosschain_stats['Total Gas Fees'][0]:,}"), unsafe_allow_html=True)
     
-# --- Row 2: Transactions Over Time -------------------------------------------------------------------------------------------------------------------------------------------
+# --- Row 3: Transactions Over Time -------------------------------------------------------------------------------------------------------------------------------------------
 fig1 = go.Figure()
 fig1.add_trace(go.Bar(x=grouped['period'], y=grouped['gmp_num_txs'], name='GMP', marker_color='#ff7400'))
 fig1.add_trace(go.Bar(x=grouped['period'], y=grouped['transfers_num_txs'], name='Token Transfers', marker_color='#00a1f7'))
@@ -300,25 +300,7 @@ fig3.add_trace(go.Bar(x=df_norm_tx['period'], y=df_norm_tx['transfers_norm'], na
 fig3.update_layout(barmode='stack', title="Normalized Transactions by Service Over Time", yaxis_tickformat='%', 
                    legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
 
-# -- Normalized Charts
-df_norm_vol = grouped.copy()
-df_norm_vol['gmp_norm'] = df_norm_vol['gmp_volume'] / df_norm_vol['total_volume']
-df_norm_vol['transfers_norm'] = df_norm_vol['transfers_volume'] / df_norm_vol['total_volume']
-
-fig4 = go.Figure()
-fig4.add_trace(go.Bar(x=df_norm_vol['period'], y=df_norm_vol['gmp_norm'], name='GMP', marker_color='#ff7400'))
-fig4.add_trace(go.Bar(x=df_norm_vol['period'], y=df_norm_vol['transfers_norm'], name='Token Transfers', marker_color='#00a1f7'))
-fig4.update_layout(barmode='stack', title="Normalized Volume by Service Over Time", yaxis_tickformat='%', legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.plotly_chart(fig3, use_container_width=True)
-
-with col2:
-    st.plotly_chart(fig4, use_container_width=True)
-
-# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# --- Row 4 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
 def load_stats_overtime(timeframe, start_date, end_date):
     
@@ -390,6 +372,28 @@ with col2:
                               title="Number of Users by Service Over Time", color_discrete_map=color_map)
     fig_grouped_user.update_layout(yaxis_title="Wallet count", xaxis_title="", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5, title=""))
     st.plotly_chart(fig_grouped_user, use_container_width=True)
+
+# --- Row 5 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# -- Normalized Charts
+df_norm_vol = grouped.copy()
+df_norm_vol['gmp_norm'] = df_norm_vol['gmp_volume'] / df_norm_vol['total_volume']
+df_norm_vol['transfers_norm'] = df_norm_vol['transfers_volume'] / df_norm_vol['total_volume']
+
+fig4 = go.Figure()
+fig4.add_trace(go.Bar(x=df_norm_vol['period'], y=df_norm_vol['gmp_norm'], name='GMP', marker_color='#ff7400'))
+fig4.add_trace(go.Bar(x=df_norm_vol['period'], y=df_norm_vol['transfers_norm'], name='Token Transfers', marker_color='#00a1f7'))
+fig4.update_layout(barmode='stack', title="Normalized Volume by Service Over Time", yaxis_tickformat='%', legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.plotly_chart(fig3, use_container_width=True)
+
+with col2:
+    st.plotly_chart(fig4, use_container_width=True)
+
+
   
 # --- Row 5: Donut Charts -------------------------------------------------------------------------------------------------------------------------------------------------------
 total_gmp_tx = grouped['gmp_num_txs'].sum()
