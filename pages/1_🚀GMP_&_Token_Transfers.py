@@ -362,7 +362,7 @@ with col2:
     st.plotly_chart(fig_grouped_user, use_container_width=True)
 
 # --- Row 5 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# -- Normalized stacked bar
+# == %Transaction count ====================================================================
 df_norm_tx = grouped.copy()
 df_norm_tx['gmp_norm'] = df_norm_tx['gmp_num_txs'] / df_norm_tx['total_txs']
 df_norm_tx['transfers_norm'] = df_norm_tx['transfers_num_txs'] / df_norm_tx['total_txs']
@@ -372,8 +372,7 @@ fig3.add_trace(go.Bar(x=df_norm_tx['period'], y=df_norm_tx['gmp_norm'], name='GM
 fig3.add_trace(go.Bar(x=df_norm_tx['period'], y=df_norm_tx['transfers_norm'], name='Token Transfers', marker_color='#00a1f7'))
 fig3.update_layout(barmode='stack', title="Normalized Transactions by Service Over Time", yaxis_tickformat='%', 
                    legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
-
-# -- Normalized Charts
+# === %volume ==============================================================================
 df_norm_vol = grouped.copy()
 df_norm_vol['gmp_norm'] = df_norm_vol['gmp_volume'] / df_norm_vol['total_volume']
 df_norm_vol['transfers_norm'] = df_norm_vol['transfers_volume'] / df_norm_vol['total_volume']
@@ -382,17 +381,16 @@ fig4 = go.Figure()
 fig4.add_trace(go.Bar(x=df_norm_vol['period'], y=df_norm_vol['gmp_norm'], name='GMP', marker_color='#ff7400'))
 fig4.add_trace(go.Bar(x=df_norm_vol['period'], y=df_norm_vol['transfers_norm'], name='Token Transfers', marker_color='#00a1f7'))
 fig4.update_layout(barmode='stack', title="Normalized Volume by Service Over Time", yaxis_tickformat='%', legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
+# === %USer ======================================================================================
+df_norm = df_stats_overtime.copy()
+df_norm['total_per_date'] = df_norm.groupby("Date")["Number of Users"].transform('sum')
+df_norm['normalized'] = df_norm["Number of Users"] / df_norm['total_per_date']
 
-df_norm = df_staking_over_time.copy()
-df_norm['total_per_date'] = df_norm.groupby('Date')['Txn Count'].transform('sum')
-df_norm['normalized'] = df_norm['Txn Count'] / df_norm['total_per_date']
-
-fig5 = px.bar(df_stats_overtime, x="Date", y="Number of Users", color="Service", title="Users Count per Month (%Normalized)", 
-                              text=df_stats_overtime["Number of Users"].astype(str), color_discrete_map=color_map)
-fig5.update_layout(barmode='stack', xaxis_title="", yaxis_title="%", yaxis=dict(tickformat='%'), legend=dict(orientation="h", yanchor="bottom", y=1.02, 
-                                    xanchor="center", x=0.5, title=""))
-fig5.update_traces(textposition='inside')
-st.plotly_chart(fig5, use_container_width=True)
+fig_norm_stacked_user = px.bar(df_norm, x='Date', y="Number of Users", color="Service", title="Users Count per Month (%Normalized)", text=df_norm["Number of Users"].astype(str),
+       color_discrete_map=color_map)
+fig_norm_stacked_user.update_layout(barmode='stack', xaxis_title="", yaxis_title="%", yaxis=dict(tickformat='%'),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, title=""))
+fig_norm_stacked_user.update_traces(textposition='inside')
 
 col1, col2, col3 = st.columns(3)
 
@@ -403,7 +401,7 @@ with col2:
     st.plotly_chart(fig4, use_container_width=True)
 
 with col3:
-    st.plotly_chart(fig5, use_container_width=True)
+    st.plotly_chart(fig_norm_stacked_user, use_container_width=True)
 
   
 # --- Row 5: Donut Charts -------------------------------------------------------------------------------------------------------------------------------------------------------
