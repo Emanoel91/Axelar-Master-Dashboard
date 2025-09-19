@@ -273,6 +273,15 @@ with col5:
     st.markdown(card_style.format(label="🔀Number of Paths", value=f"{df_crosschain_stats['Unique Paths'][0]:,}"), unsafe_allow_html=True)
 with col6:
     st.markdown(card_style.format(label="⛽Total Gas Fees", value=f"${df_crosschain_stats['Total Gas Fees'][0]:,}"), unsafe_allow_html=True)
+
+st.markdown(
+    """
+    <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Analysis of Cross-Chain Transfers By Service</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
     
 # --- Row 3: Transactions Over Time -------------------------------------------------------------------------------------------------------------------------------------------
 fig1 = go.Figure()
