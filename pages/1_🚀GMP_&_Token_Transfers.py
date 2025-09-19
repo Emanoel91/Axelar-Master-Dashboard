@@ -370,7 +370,7 @@ df_norm_tx['transfers_norm'] = df_norm_tx['transfers_num_txs'] / df_norm_tx['tot
 fig3 = go.Figure()
 fig3.add_trace(go.Bar(x=df_norm_tx['period'], y=df_norm_tx['gmp_norm'], name='GMP', marker_color='#ff7400'))
 fig3.add_trace(go.Bar(x=df_norm_tx['period'], y=df_norm_tx['transfers_norm'], name='Token Transfers', marker_color='#00a1f7'))
-fig3.update_layout(barmode='stack', title="Normalized Transactions Over Time", yaxis_tickformat='%', 
+fig3.update_layout(barmode='stack', title="Normalized Transactions Over Time", yaxis_tickformat='%', yaxis_title="%", 
                    legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
 # === %volume ==============================================================================
 df_norm_vol = grouped.copy()
@@ -380,7 +380,8 @@ df_norm_vol['transfers_norm'] = df_norm_vol['transfers_volume'] / df_norm_vol['t
 fig4 = go.Figure()
 fig4.add_trace(go.Bar(x=df_norm_vol['period'], y=df_norm_vol['gmp_norm'], name='GMP', marker_color='#ff7400'))
 fig4.add_trace(go.Bar(x=df_norm_vol['period'], y=df_norm_vol['transfers_norm'], name='Token Transfers', marker_color='#00a1f7'))
-fig4.update_layout(barmode='stack', title="Normalized Volume Over Time", yaxis_tickformat='%', legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
+fig4.update_layout(barmode='stack', title="Normalized Volume Over Time", yaxis_tickformat='%', yaxis_title="%", 
+                   legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
 # === %User ======================================================================================
 df_norm = df_stats_overtime.copy()
 df_norm['total_per_date'] = df_norm.groupby("Date")["Number of Users"].transform('sum')
