@@ -271,3 +271,97 @@ if not df_path_table.empty:
     st.dataframe(df_path_table, use_container_width=True)
 else:
     st.warning("No cross-chain path data available for the selected period.")
+
+# --- Row 4,5 = -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_top_path(start_date, end_date):
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    with axelar_services as (
+
+select created_at, data:value as amount, id, to_varchar(data:call:transaction:from) as user,
+cast((data:gas:gas_used_amount) * (data:gas_price_rate:source_token.token_price.usd) AS varchar) AS fee_usd,
+lower((data:call:chain)) || '➡' ||  lower((data:call:returnValues:destinationChain)) as "🔀Path"
+from axelar.axelscan.fact_gmp
+where simplified_status = 'received'
+
+union all
+    
+select created_at, (data:send:amount * data:link:price) as amount, id, sender_address as user,
+cast(data:send:fee_value AS varchar) as fee_usd,
+data:send:original_source_chain || '➡' || data:send:original_destination_chain as "🔀Path"
+from axelar.axelscan.fact_transfers
+where 
+(data:send:amount) <> ''
+and (data:link:price) <> ''
+and (data:link:price) <> '[]'
+and (data:send:amount * data:link:price) <= 20000000
+and simplified_status = 'received'
+)
+
+select "Path", 
+count(distinct id)as "Number of Transfers", 
+count(distinct user) as "Number of Users",
+round(sum(amount),2) as "Volume of Transfers",
+round(sum(fee_usd),2) as "Total Fee"
+from axelar_services
+where created_at::date>='{start_str}' and created_at::date<='{end_str}'
+group by 1
+order by 2 desc
+    """
+    df = pd.read_sql(query, conn)
+    return df
+# === Load Data ===============================================
+df_top_path = load_top_path(start_date, end_date)
+# === Charts: Row 5,6 =========================================
+top_vol = df_top_path.nlargest(10, "Volume of Transfers")
+top_txn = df_top_path.nlargest(10, "Number of Transfers")
+top_usr = df_top_path.nlargest(10, "Number of Users")
+top_fee = df_top_path.nlargest(10, "Total Fee")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    fig1 = px.bar(
+        top_vol.sort_values("Volume of Transfers"),
+        x="Volume of Transfers", y="Path",
+        orientation="h",
+        title="Top Paths By Volume",
+        labels={"Volume of Transfers": "$USD", "Path": ""}
+    )
+    st.plotly_chart(fig1, use_container_width=True)
+
+with col2:
+    fig2 = px.bar(
+        top_txn.sort_values("Number of Transfers"),
+        x="Number of Transfers", y="Path",
+        orientation="h",
+        title="Top Paths By Transaction",
+        labels={"Number of Transfers": "Txns count", "Path": ""}
+    )
+    st.plotly_chart(fig2, use_container_width=True)
+
+col3, col4 = st.columns(2)
+
+with col3:
+    fig1 = px.bar(
+        top_usr.sort_values("Number of Users"),
+        x="Number of Users", y="Path",
+        orientation="h",
+        title="Top Paths By User",
+        labels={"Number of Users": "wallet count", "Path": ""}
+    )
+    st.plotly_chart(fig1, use_container_width=True)
+
+with col4:
+    fig2 = px.bar(
+        top_fee.sort_values("Total Fee"),
+        x="Total Fee", y="Path",
+        orientation="h",
+        title="Highest Fee-Collecting Paths",
+        labels={"Total Fee": "$USD", "Path": ""}
+    )
+    st.plotly_chart(fig2, use_container_width=True)
