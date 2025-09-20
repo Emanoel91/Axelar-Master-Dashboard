@@ -615,3 +615,82 @@ with col1:
 
 with col2:
     st.plotly_chart(fig2, use_container_width=True)
+
+# --- Row 8 ----------------------------------------------------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_path_type_stats(start_date, end_date):
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    with axelar_services as (
+
+select created_at, data:value as amount, id, to_varchar(data:call:transaction:from) as user,
+(data:call:chain_type) || '' ||  destination_chain_type as "Path Type",
+'GMP' as "Service"
+from axelar.axelscan.fact_gmp
+where simplified_status = 'received'
+and and created_at>='{start_str}' and created_at::date<='{end_str}'
+
+union all
+
+select created_at, (data:send:amount * data:link:price) as amount, id, sender_address as user,
+data:time_spent:source_chain_type || '➡' || data:time_spent:destination_chain_type as "Path Type",
+'Token Transfers' as "Service"
+from axelar.axelscan.fact_transfers
+where 
+(data:send:amount) <> ''
+and (data:link:price) <> ''
+and (data:link:price) <> '[]'
+and (data:send:amount * data:link:price) <= 20000000
+and simplified_status = 'received'
+and created_at>='{start_str}' and created_at::date<='{end_str}'
+)
+
+select count(distinct user) as "Number of Users", count(distinct id) as "Number of Transfers",
+round(sum(amount),1) as "Volume of Transfers", case 
+when "Path Type"='evm➡cosmos' then 'evm➡ibc'
+when "Path Type"='vmvm' then 'evm➡evm'
+when "Path Type"='vmevm' then 'evm➡evm'
+when "Path Type"='axelarnet➡cosmos' then 'axelarnet➡ibc'
+when "Path Type"='cosmos➡cosmos' then 'ibc➡ibc'
+when "Path Type"='cosmos➡axelarnet' then 'ibc➡axelarnet'
+when "Path Type"='cosmosevm' then 'ibc➡evm'
+when "Path Type"='evmcosmos' then 'evm➡ibc'
+when "Path Type"='cosmos➡evm' then 'ibc➡evm'
+when "Path Type"='evmevm' then 'evm➡evm'
+when "Path Type"='cosmoscosmos' then 'ibc➡ibc'
+when "Path Type"='vmcosmos' then 'vm➡ibc'
+when "Path Type"='cosmosvm' then 'ibc➡vm'
+when "Path Type"='evmvm' then 'evm➡vm'
+when "Path Type" is null then 'Not Labeled'
+else "Path Type" end as "Path Type"
+from axelar_services
+group by 4
+order by 2 desc 
+    """
+    df = pd.read_sql(query, conn)
+    return df
+
+
+    
+# === Load Data ==================================================================
+df_path_type_stats = load_path_type_stats(start_date, end_date)
+# === Charts: Row 8 ==============================================================
+
+fig_donut_volume = px.pie(df_path_type_stats, names="Path Type", values="Volume of Transfers", title="Total Volume of Transfers By Path Type", hole=0.5, color="Path Type")
+fig_donut_volume.update_traces(textposition='outside', textinfo='percent+label', pull=[0.05]*len(df_path_type_stats))
+fig_donut_volume.update_layout(showlegend=True, legend=dict(orientation="v", y=0.5, x=1.1))
+
+fig_donut_txn = px.pie(df_path_type_stats, names="Path Type", values="Number of Transfers", title="Total Number of Transfers By Path Type", hole=0.5, color="Path Type")
+fig_donut_txn.update_traces(textposition='outside', textinfo='percent+label', pull=[0.05]*len(df_path_type_stats))
+fig_donut_txn.update_layout(showlegend=True, legend=dict(orientation="v", y=0.5, x=1.1))
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.plotly_chart(fig_donut_volume, use_container_width=True)
+
+with col2:
+    st.plotly_chart(fig_donut_txn, use_container_width=True)
