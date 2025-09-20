@@ -591,8 +591,7 @@ for Path_Type in df_norm["Path_Type"].unique():
     df_path_type_volume = df_norm[df_norm["Path_Type"] == Path_Type]
     fig1.add_trace(go.Bar(x=df_path_type_volume["Date"], y=df_path_type_volume["normalized"], name=Path_Type, text=df_path_type_volume["Transfers Volume"].astype(str),
             marker_color=color_map.get(Path_Type, None)))
-fig1.update_layout(barmode='stack', title="Volume of Cross-Chain Transfers by Path Type (%Normalized)", xaxis_title="", yaxis=dict(tickformat='%'), legend=dict(
-        orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, title=""))
+fig1.update_layout(barmode='stack', title="Volume of Cross-Chain Transfers by Path Type (%Normalized)", xaxis_title="", yaxis=dict(tickformat='%'))
 fig1.update_traces(textposition='inside')
 
 # ------------------
@@ -605,8 +604,7 @@ for Path_Type in df_norm["Path_Type"].unique():
     df_path_type_txn = df_norm[df_norm["Path_Type"] == Path_Type]
     fig2.add_trace(go.Bar(x=df_path_type_txn["Date"], y=df_path_type_txn["normalized"], name=Path_Type, text=df_path_type_txn["Transfers Count"].astype(str),
             marker_color=color_map.get(Path_Type, None)))
-fig2.update_layout(barmode='stack', title="Number of Cross-Chain Transfers by Path Type (%Normalized)", xaxis_title="", yaxis=dict(tickformat='%'), legend=dict(
-        orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, title=""))
+fig2.update_layout(barmode='stack', title="Number of Cross-Chain Transfers by Path Type (%Normalized)", xaxis_title="", yaxis=dict(tickformat='%'))
 fig2.update_traces(textposition='inside')
 
 
