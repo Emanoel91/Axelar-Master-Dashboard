@@ -217,7 +217,56 @@ st.dataframe(
     height=600
 )
 # --- Row 3 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-st.markdown(
-    "<h5 style='font-size:18px; margin-bottom:-100px;'>Monitoring Cross-Chain Paths</h5>", 
-    unsafe_allow_html=True
+st.markdown("<h5 style='font-size:18px; margin-bottom:-100px;'>Monitoring Cross-Chain Paths</h5>", unsafe_allow_html=True)
+
+@st.cache_data
+def load_path_table(start_date, end_date):
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    with axelar_services as (
+
+select created_at, data:value as amount, id, to_varchar(data:call:transaction:from) as user,
+cast((data:gas:gas_used_amount) * (data:gas_price_rate:source_token.token_price.usd) AS varchar) AS fee_usd,
+lower((data:call:chain)) || '➡' ||  lower((data:call:returnValues:destinationChain)) as "🔀Path"
+from axelar.axelscan.fact_gmp
+where simplified_status = 'received'
+
+union all
+    
+select created_at, (data:send:amount * data:link:price) as amount, id, sender_address as user,
+cast(data:send:fee_value AS varchar) as fee_usd,
+data:send:original_source_chain || '➡' || data:send:original_destination_chain as "🔀Path"
+from axelar.axelscan.fact_transfers
+where 
+(data:send:amount) <> ''
+and (data:link:price) <> ''
+and (data:link:price) <> '[]'
+and (data:send:amount * data:link:price) <= 20000000
+and simplified_status = 'received'
 )
+
+select "🔀Path", 
+TO_VARCHAR(count(distinct id), '999,999,999,999,999') as "🚀Number of Transfers", 
+TO_VARCHAR(count(distinct user), '999,999,999,999,999') as "👥Number of Users",
+'' || '$' || TO_VARCHAR(round(sum(amount),2), '999,999,999,999,999') as "💸Volume of Transfers ($USD)",
+'' || '$' || TO_VARCHAR(round(avg(amount),2), '999,999,999,999,999') as "📊Avg Volume per Txn ($USD)",
+'' || '$' || TO_VARCHAR(round(sum(fee_usd),2), '999,999,999,999,999') as "⛽Total Fee ($USD)",
+'$' || ' ' || round(avg(fee_usd),2) as "🔥Avg Fee ($USD)"
+from axelar_services
+where created_at::date>='{start_str}' and created_at::date<='{end_str}'
+group by 1
+order by 2 desc
+    """
+    df = pd.read_sql(query, conn)
+    return df
+# === Load Data =====================================
+df_path_table = load_path_table(start_date, end_date)
+# ===================================================
+if not df_path_table.empty:
+    df_path_table.index = df_path_table.index + 1  # Start index from 1
+    st.dataframe(df_path_table, use_container_width=True)
+else:
+    st.warning("No cross-chain path data available for the selected period.")
