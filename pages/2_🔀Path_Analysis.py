@@ -114,17 +114,9 @@ st.markdown(
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- Getting Chains Data from API ---------------------------------------------------------------------------------------
-# --- Axelar Chains Table + KPI --------------------------------------------------------------------------------------
-import requests
-import pandas as pd
-import streamlit as st
-
-# دریافت داده‌ها از API
 url = "https://api.axelarscan.io/api/getChains"
 response = requests.get(url)
 chains_data = response.json()
-
-# ساخت DataFrame با فیلدهای مهم
 chains_df = pd.DataFrame([
     {
         "Chain ID": chain.get("chain_id"),
@@ -138,31 +130,16 @@ chains_df = pd.DataFrame([
     for chain in chains_data
 ])
 
-# شماره‌گذاری از 1 شروع شود
 chains_df.index = chains_df.index + 1
-
-# --- عنوان جدول ---
-st.markdown(
-    """
-    <div style="background-color:#00c2ff; padding:1px; border-radius:10px;">
-        <h2 style="color:#000000; text-align:center;">🌐 Supported Chains by Axelar</h2>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
 st.markdown("<br>", unsafe_allow_html=True)
-
-# --- نمایش جدول ---
 st.dataframe(
     chains_df,
     use_container_width=True,
     height=600
 )
 
-# --- KPI: تعداد کل زنجیره‌ها ---
+# --- Row 2: KPIs ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 total_chains = len(chains_df)
-
-# قالب کارت
 card_style = """
     <div style="
         background-color: #f9f9f9;
@@ -177,7 +154,6 @@ card_style = """
     </div>
 """
 
-# نمایش KPI در مرکز صفحه
 st.markdown("<br>", unsafe_allow_html=True)
 col1, col2, col3 = st.columns([1,2,1])
 with col2:
