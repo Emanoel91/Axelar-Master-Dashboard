@@ -313,7 +313,7 @@ TO_VARCHAR(count(distinct user), '999,999,999,999,999') as "👥Number of Users"
 '' || '' || TO_VARCHAR(round(avg(amount_usd),2), '999,999,999,999,999') as "📊Avg Volume per Txn ($USD)",
 '' || '' || TO_VARCHAR(round(sum(fee),2), '999,999,999,999,999') as "⛽Total Fee ($USD)",
 '' || '' || round(avg(fee),2) as "🔥Avg Fee ($USD)"
-from axelar_services
+from axelar_service
 where created_at::date>='{start_str}' and created_at::date<='{end_str}'
 group by 1
 order by 2 desc
