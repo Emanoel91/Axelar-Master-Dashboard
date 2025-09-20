@@ -530,7 +530,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
+st.markdown("<br>", unsafe_allow_html=True)
 # --- Row 6 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 st.markdown("<h5 style='font-size:18px; margin-bottom:1px;'>Monitoring Source Chains</h5>", unsafe_allow_html=True)
 
@@ -845,7 +845,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
+st.markdown("<br>", unsafe_allow_html=True)
 # --- Row 9 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 st.markdown("<h5 style='font-size:18px; margin-bottom:1px;'>Monitoring Destination Chains</h5>", unsafe_allow_html=True)
 
