@@ -680,11 +680,11 @@ df_path_type_stats = load_path_type_stats(start_date, end_date)
 # === Charts: Row 8 ==============================================================
 
 fig_donut_volume = px.pie(df_path_type_stats, names="Path Type", values="Volume of Transfers", title="Total Volume of Transfers By Path Type", hole=0.5, color="Path Type")
-fig_donut_volume.update_traces(textposition='outside', textinfo='percent+label', pull=[0.05]*len(df_path_type_stats))
+fig_donut_volume.update_traces(textposition='inside', textinfo='percent+label', pull=[0.05]*len(df_path_type_stats))
 fig_donut_volume.update_layout(showlegend=True, legend=dict(orientation="v", y=0.5, x=1.1))
 
 fig_donut_txn = px.pie(df_path_type_stats, names="Path Type", values="Number of Transfers", title="Total Number of Transfers By Path Type", hole=0.5, color="Path Type")
-fig_donut_txn.update_traces(textposition='outside', textinfo='percent+label', pull=[0.05]*len(df_path_type_stats))
+fig_donut_txn.update_traces(textposition='inside', textinfo='percent+label', pull=[0.05]*len(df_path_type_stats))
 fig_donut_txn.update_layout(showlegend=True, legend=dict(orientation="v", y=0.5, x=1.1))
 
 col1, col2 = st.columns(2)
