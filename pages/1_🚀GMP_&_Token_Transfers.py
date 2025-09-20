@@ -631,7 +631,7 @@ select created_at, data:value as amount, id, to_varchar(data:call:transaction:fr
 'GMP' as "Service"
 from axelar.axelscan.fact_gmp
 where simplified_status = 'received'
-and and created_at>='{start_str}' and created_at::date<='{end_str}'
+and created_at>='{start_str}' and created_at::date<='{end_str}'
 
 union all
 
