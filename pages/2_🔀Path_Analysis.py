@@ -115,7 +115,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # --- Getting Chains Data from API ---------------------------------------------------------------------------------------
 st.markdown(
-    "<h5 style='font-size:18px; margin-bottom:-5px;'>📋 Details of supported chains</h5>", 
+    "<h5 style='font-size:18px; margin-bottom:-20px;'>📋 Details of supported chains</h5>", 
     unsafe_allow_html=True
 )
 url = "https://api.axelarscan.io/api/getChains"
