@@ -111,7 +111,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-# -- st.markdown("<br>", unsafe_allow_html=True)
 
 # --- Getting Chains Data from API ---------------------------------------------------------------------------------------
 
@@ -130,7 +129,7 @@ chains_df = pd.DataFrame([
     }
     for chain in chains_data
 ])
-# --- Row 2: KPIs ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+# --- Row 1: KPIs ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
 def load_crosschain_stats(start_date, end_date):
     
@@ -203,8 +202,9 @@ with col1:
 
 with col2:
     st.markdown(card_style.format(label="🔀Number of Paths", value=f"{df_crosschain_stats['Unique Paths'][0]:,}"), unsafe_allow_html=True)
-
-# --- Table ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    
+st.markdown("<br>", unsafe_allow_html=True)
+# --- Row 2: Table ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 st.markdown(
     "<h5 style='font-size:18px; margin-bottom:-100px;'>📋 Details of supported chains</h5>", 
     unsafe_allow_html=True
