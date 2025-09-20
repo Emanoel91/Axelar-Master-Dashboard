@@ -133,15 +133,6 @@ chains_df = pd.DataFrame([
     }
     for chain in chains_data
 ])
-
-chains_df.index = chains_df.index + 1
-st.markdown("<br>", unsafe_allow_html=True)
-st.dataframe(
-    chains_df,
-    use_container_width=True,
-    height=600
-)
-
 # --- Row 2: KPIs ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 total_chains = len(chains_df)
 card_style = """
@@ -162,3 +153,13 @@ st.markdown("<br>", unsafe_allow_html=True)
 col1, col2, col3 = st.columns([1,2,1])
 with col2:
     st.markdown(card_style.format(label="🧩 Total Supported Chains", value=total_chains), unsafe_allow_html=True)
+
+# --- Table ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+chains_df.index = chains_df.index + 1
+st.markdown("<br>", unsafe_allow_html=True)
+st.dataframe(
+    chains_df,
+    use_container_width=True,
+    height=600
+)
+
