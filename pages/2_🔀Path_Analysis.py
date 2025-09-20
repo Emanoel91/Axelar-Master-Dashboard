@@ -215,6 +215,7 @@ st.dataframe(
     height=600
 )
 st.markdown("<br>", unsafe_allow_html=True)
+
 # --- Row 3 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 st.markdown("<h5 style='font-size:18px; margin-bottom:1px;'>Monitoring Cross-Chain Paths</h5>", unsafe_allow_html=True)
 
@@ -521,6 +522,15 @@ with col4:
     fig4 = add_bar_labels(fig4, "Total Fee", top_fee.sort_values("Total Fee"))
     st.plotly_chart(fig4, use_container_width=True)
 
+st.markdown(
+    """
+    <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Analysis of Source Chains</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 # --- Row 6 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 st.markdown("<h5 style='font-size:18px; margin-bottom:1px;'>Monitoring Source Chains</h5>", unsafe_allow_html=True)
 
@@ -826,6 +836,15 @@ with col4:
         labels={"Total Fee": "$USD", "Source Chain": ""})
     fig4 = add_bar_labels(fig4, "Total Fee", top_fee.sort_values("Total Fee"))
     st.plotly_chart(fig4, use_container_width=True)
+
+st.markdown(
+    """
+    <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Analysis of Destination Chains</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # --- Row 9 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 st.markdown("<h5 style='font-size:18px; margin-bottom:1px;'>Monitoring Destination Chains</h5>", unsafe_allow_html=True)
