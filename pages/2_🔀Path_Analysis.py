@@ -216,4 +216,8 @@ st.dataframe(
     use_container_width=True,
     height=600
 )
-
+# --- Row 3 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+st.markdown(
+    "<h5 style='font-size:18px; margin-bottom:-100px;'>Monitoring Cross-Chain Paths</h5>", 
+    unsafe_allow_html=True
+)
