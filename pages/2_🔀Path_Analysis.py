@@ -114,30 +114,29 @@ st.markdown(
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- Getting Chains Data from API ---------------------------------------------------------------------------------------
+# --- Axelar Chains Table + KPI --------------------------------------------------------------------------------------
+import requests
+import pandas as pd
+import streamlit as st
+
+# دریافت داده‌ها از API
 url = "https://api.axelarscan.io/api/getChains"
 response = requests.get(url)
 chains_data = response.json()
 
-# پیدا کردن بیشترین تعداد RPC بین همه زنجیره‌ها
-max_rpc = max(len(chain.get("endpoints", {}).get("rpc", [])) for chain in chains_data)
-
-# ساخت DataFrame با فیلدهای مهم + RPC ها به صورت ستون‌های جدا
-chains_list = []
-for chain in chains_data:
-    row = {
+# ساخت DataFrame با فیلدهای مهم
+chains_df = pd.DataFrame([
+    {
         "Chain ID": chain.get("chain_id"),
         "Name": chain.get("chain_name"),
         "Symbol": chain.get("native_token", {}).get("symbol"),
         "Explorer": chain.get("explorer", {}).get("name"),
+        "RPC Endpoints": ", ".join(chain.get("endpoints", {}).get("rpc", [])[:2]) + (" ..." if len(chain.get("endpoints", {}).get("rpc", [])) > 2 else ""),
         "Gateway": chain.get("gateway", {}).get("address"),
         "Type": chain.get("chain_type"),
     }
-    rpcs = chain.get("endpoints", {}).get("rpc", [])
-    for i in range(max_rpc):
-        row[f"RPC {i+1}"] = rpcs[i] if i < len(rpcs) else ""
-    chains_list.append(row)
-
-chains_df = pd.DataFrame(chains_list)
+    for chain in chains_data
+])
 
 # شماره‌گذاری از 1 شروع شود
 chains_df.index = chains_df.index + 1
