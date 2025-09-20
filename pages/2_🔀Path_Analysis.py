@@ -809,7 +809,7 @@ with col1:
 with col2:
     fig2 = px.bar(top_txn.sort_values("Number of Transfers"), x="Number of Transfers", y="Source Chain", orientation="h", title="Top Source Chains By Transaction",
         labels={"Number of Transfers": "Txns count", "Source Chain": ""})
-    fig2 = add_bar_labels(fig2, "Number of Transfers", top_txn)
+    fig2 = add_bar_labels(fig2, "Number of Transfers", top_txn.sort_values("Number of Transfers"))
     st.plotly_chart(fig2, use_container_width=True)
 
 # === Row 8 ===========================================
@@ -818,12 +818,12 @@ col3, col4 = st.columns(2)
 with col3:
     fig3 = px.bar(top_usr.sort_values("Number of Users"), x="Number of Users", y="Source Chain", orientation="h", title="Top Source Chains By User",
         labels={"Number of Users": "wallet count", "Source Chain": ""})
-    fig3 = add_bar_labels(fig3, "Number of Users", top_usr)
+    fig3 = add_bar_labels(fig3, "Number of Users", top_user.sort_values("Number of Users"))
     st.plotly_chart(fig3, use_container_width=True)
 
 with col4:
     fig4 = px.bar(top_fee.sort_values("Total Fee"), x="Total Fee", y="Source Chain", orientation="h", title="Highest Fee-Collecting Source Chains",
         labels={"Total Fee": "$USD", "Source Chain": ""})
-    fig4 = add_bar_labels(fig4, "Total Fee", top_fee)
+    fig4 = add_bar_labels(fig4, "Total Fee", top_fee.sort_values("Total Fee"))
     st.plotly_chart(fig4, use_container_width=True)
 
