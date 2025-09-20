@@ -698,6 +698,6 @@ with col2:
 # --- Chart: Row 9 -------------------------------------------------------------------------------------------------------------------------------------------------------
 bar_fig = px.bar(df_path_type_stats, x="Path Type", y="Number of Users", title="Total Number of Users By Path Type", color_discrete_sequence=["blue"])
 bar_fig.update_layout(xaxis_title="", yaxis_title="wallet count", bargap=0.2)
-bar_fig.update_traces(text=df_path_type_stats["Number of Users"], texttemplate='%{text}', textposition='inside', showlegend=False)    
+bar_fig.update_traces(text=df_path_type_stats["Number of Users"], texttemplate='%{text}', textposition='outside', showlegend=False)    
 st.plotly_chart(bar_fig, use_container_width=True)
 
