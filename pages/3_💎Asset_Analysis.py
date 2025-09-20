@@ -61,7 +61,7 @@ def convert_timestamp_series(s):
 
 # Streamlit UI
 st.set_page_config(page_title="Axelar Token Dashboard", layout="wide")
-st.title("📊 Axelar Token Transfers & GMP Dashboard")
+st.title("💎Asset Analysis")
 
 # Time filters
 col1, col2, col3 = st.columns(3)
@@ -102,7 +102,7 @@ if "image" in all_tokens.columns:
     all_tokens = all_tokens.drop(columns=["image"])
 all_tokens.index = all_tokens.index + 1
 
-st.subheader("📋 Token List")
+st.subheader("📋 Details of supported Tokens")
 st.dataframe(all_tokens)
 
 # ===================
@@ -167,11 +167,11 @@ grouped = (
 # ===================
 # Charts (Plotly)
 # ===================
-st.subheader("📊 Transfers Over Time (Stacked Bar)")
+st.subheader("Number of Transfers by Token Over Time")
 fig = px.bar(grouped, x="timestamp", y="num_txs", color="token", barmode="stack")
 st.plotly_chart(fig, use_container_width=True)
 
-st.subheader("📊 Volume Over Time (Stacked Bar)")
+st.subheader("Volume of Transfers by Token Over Time")
 fig = px.bar(grouped, x="timestamp", y="volume", color="token", barmode="stack")
 st.plotly_chart(fig, use_container_width=True)
 
@@ -181,13 +181,13 @@ totals = totals.sort_values("volume", ascending=False)
 # Two horizontal bar charts side by side
 col1, col2 = st.columns(2)
 with col1:
-    st.subheader("📊 Total Transfers by Token (Horizontal Bar)")
+    st.subheader("Total Number of Transfers by Token")
     transfers_sorted = totals.sort_values("num_txs", ascending=False)
     fig = px.bar(transfers_sorted, x="num_txs", y="token", orientation='h')
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
-    st.subheader("📊 Total Volume by Token (Horizontal Bar)")
+    st.subheader("Total Volume of Transfers by Token ($USD)")
     fig = px.bar(totals, x="volume", y="token", orientation='h')
     st.plotly_chart(fig, use_container_width=True)
 
@@ -199,11 +199,11 @@ agg_type_time = (
     .reset_index()
 )
 
-st.subheader("📊 Transfers by ITS vs Gateway (Stacked Over Time)")
+st.subheader("Number of Transfers by ITS vs Gateway")
 fig = px.bar(agg_type_time, x="timestamp", y="num_txs", color="type", barmode="stack")
 st.plotly_chart(fig, use_container_width=True)
 
-st.subheader("📊 Volume by ITS vs Gateway (Stacked Over Time)")
+st.subheader("Volume of Transfers by ITS vs Gateway")
 fig = px.bar(agg_type_time, x="timestamp", y="volume", color="type", barmode="stack")
 st.plotly_chart(fig, use_container_width=True)
 
@@ -211,20 +211,20 @@ st.plotly_chart(fig, use_container_width=True)
 agg_type = grouped.groupby("type")[ ["num_txs","volume"] ].sum().reset_index()
 col1, col2 = st.columns(2)
 with col1:
-    st.subheader("🥧 Share of Transfers (ITS vs Gateway)")
+    st.subheader("Share of Transfers: ITS vs Gateway")
     fig = px.pie(agg_type, names="type", values="num_txs", hole=0.3)
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
-    st.subheader("🥧 Share of Volume (ITS vs Gateway)")
+    st.subheader("Share of Volume: ITS vs Gateway ($USD)")
     fig = px.pie(agg_type, names="type", values="volume", hole=0.3)
     st.plotly_chart(fig, use_container_width=True)
 
 # Top tokens tables
-st.subheader("🔎 Top tokens by volume")
+st.subheader("Top Tokens by Volume Volume of Transfers")
 st.dataframe(totals.head(20).reset_index(drop=True).rename_axis(None).set_index(pd.Index(range(1,21))))
 
-st.subheader("🔎 Top tokens by num_txs")
+st.subheader("Top Tokens by Number of Transfers")
 transfers_sorted = transfers_sorted.reset_index(drop=True)
 transfers_sorted.index = transfers_sorted.index + 1
 st.dataframe(transfers_sorted.head(20))
