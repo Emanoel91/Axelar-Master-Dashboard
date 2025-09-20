@@ -774,7 +774,7 @@ order by 2 desc
     return df
 # === Load Data ===============================================
 df_top_source_chains = load_top_source_chains(start_date, end_date)
-# === Charts: Row 5,6 =========================================
+# === Charts: Row 7,8 =========================================
 top_vol = df_top_source_chains.nlargest(10, "Volume of Transfers")
 top_txn = df_top_source_chains.nlargest(10, "Number of Transfers")
 top_usr = df_top_source_chains.nlargest(10, "Number of Users")
@@ -797,13 +797,13 @@ def add_bar_labels(fig, x_col, df):
     )
     return fig
 
-# === Row 4 ===========================================
+# === Row 7 ===========================================
 col1, col2 = st.columns(2)
 
 with col1:
     fig1 = px.bar(top_vol.sort_values("Volume of Transfers"), x="Volume of Transfers", y="Source Chain", orientation="h", title="Top Source Chains By Volume",
         labels={"Volume of Transfers": "$USD", "Source Chain": ""})
-    fig1 = add_bar_labels(fig1, "Volume of Transfers", top_vol)
+    fig1 = add_bar_labels(fig1, "Volume of Transfers", top_vol.sort_values("Volume of Transfers"))
     st.plotly_chart(fig1, use_container_width=True)
 
 with col2:
@@ -812,7 +812,7 @@ with col2:
     fig2 = add_bar_labels(fig2, "Number of Transfers", top_txn)
     st.plotly_chart(fig2, use_container_width=True)
 
-# === Row 5 ===========================================
+# === Row 8 ===========================================
 col3, col4 = st.columns(2)
 
 with col3:
