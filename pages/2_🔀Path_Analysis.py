@@ -114,26 +114,35 @@ st.markdown(
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- Getting Chains Data from API ---------------------------------------------------------------------------------------
-# دریافت داده‌ها از API
 url = "https://api.axelarscan.io/api/getChains"
 response = requests.get(url)
 chains_data = response.json()
 
-# ساخت DataFrame با فیلدهای مهم
-chains_df = pd.DataFrame([
-    {
+# پیدا کردن بیشترین تعداد RPC بین همه زنجیره‌ها
+max_rpc = max(len(chain.get("endpoints", {}).get("rpc", [])) for chain in chains_data)
+
+# ساخت DataFrame با فیلدهای مهم + RPC ها به صورت ستون‌های جدا
+chains_list = []
+for chain in chains_data:
+    row = {
         "Chain ID": chain.get("chain_id"),
         "Name": chain.get("chain_name"),
         "Symbol": chain.get("native_token", {}).get("symbol"),
         "Explorer": chain.get("explorer", {}).get("name"),
-        "RPC Endpoints": ", ".join(chain.get("endpoints", {}).get("rpc", [])[:2]) + (" ..." if len(chain.get("endpoints", {}).get("rpc", [])) > 2 else ""),
         "Gateway": chain.get("gateway", {}).get("address"),
         "Type": chain.get("chain_type"),
     }
-    for chain in chains_data
-])
+    rpcs = chain.get("endpoints", {}).get("rpc", [])
+    for i in range(max_rpc):
+        row[f"RPC {i+1}"] = rpcs[i] if i < len(rpcs) else ""
+    chains_list.append(row)
 
-# نمایش جدول در Streamlit
+chains_df = pd.DataFrame(chains_list)
+
+# شماره‌گذاری از 1 شروع شود
+chains_df.index = chains_df.index + 1
+
+# --- عنوان جدول ---
 st.markdown(
     """
     <div style="background-color:#00c2ff; padding:1px; border-radius:10px;">
@@ -144,8 +153,33 @@ st.markdown(
 )
 st.markdown("<br>", unsafe_allow_html=True)
 
+# --- نمایش جدول ---
 st.dataframe(
     chains_df,
     use_container_width=True,
     height=600
 )
+
+# --- KPI: تعداد کل زنجیره‌ها ---
+total_chains = len(chains_df)
+
+# قالب کارت
+card_style = """
+    <div style="
+        background-color: #f9f9f9;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+        ">
+        <h4 style="margin: 0; font-size: 20px; color: #555;">{label}</h4>
+        <p style="margin: 5px 0 0; font-size: 20px; font-weight: bold; color: #000;">{value}</p>
+    </div>
+"""
+
+# نمایش KPI در مرکز صفحه
+st.markdown("<br>", unsafe_allow_html=True)
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    st.markdown(card_style.format(label="🧩 Total Supported Chains", value=total_chains), unsafe_allow_html=True)
