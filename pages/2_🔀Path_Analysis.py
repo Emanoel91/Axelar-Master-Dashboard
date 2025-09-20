@@ -113,3 +113,39 @@ st.markdown(
 )
 st.markdown("<br>", unsafe_allow_html=True)
 
+# --- Getting Chains Data from API ---------------------------------------------------------------------------------------
+# دریافت داده‌ها از API
+url = "https://api.axelarscan.io/api/getChains"
+response = requests.get(url)
+chains_data = response.json()
+
+# ساخت DataFrame با فیلدهای مهم
+chains_df = pd.DataFrame([
+    {
+        "Chain ID": chain.get("chain_id"),
+        "Name": chain.get("chain_name"),
+        "Symbol": chain.get("native_token", {}).get("symbol"),
+        "Explorer": chain.get("explorer", {}).get("name"),
+        "RPC Endpoints": ", ".join(chain.get("endpoints", {}).get("rpc", [])[:2]) + (" ..." if len(chain.get("endpoints", {}).get("rpc", [])) > 2 else ""),
+        "Gateway": chain.get("gateway", {}).get("address"),
+        "Type": chain.get("chain_type"),
+    }
+    for chain in chains_data
+])
+
+# نمایش جدول در Streamlit
+st.markdown(
+    """
+    <div style="background-color:#00c2ff; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">🌐 Supported Chains by Axelar</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.markdown("<br>", unsafe_allow_html=True)
+
+st.dataframe(
+    chains_df,
+    use_container_width=True,
+    height=600
+)
