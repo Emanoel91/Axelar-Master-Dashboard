@@ -114,7 +114,10 @@ st.markdown(
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- Getting Chains Data from API ---------------------------------------------------------------------------------------
-st.subheader("📋Details of supported chains")
+st.markdown(
+    "<h5 style='font-size:18px;'>📋 Details of supported chains</h5>", 
+    unsafe_allow_html=True
+)
 url = "https://api.axelarscan.io/api/getChains"
 response = requests.get(url)
 chains_data = response.json()
