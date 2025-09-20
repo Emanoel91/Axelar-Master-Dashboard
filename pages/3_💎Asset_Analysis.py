@@ -221,12 +221,14 @@ with col2:
     st.plotly_chart(fig, use_container_width=True)
 
 # Top tokens tables
-st.subheader("Top Tokens by Volume Volume of Transfers")
-st.dataframe(totals.head(20).reset_index(drop=True).rename_axis(None).set_index(pd.Index(range(1,21))))
-
-st.subheader("Top Tokens by Number of Transfers")
-transfers_sorted = transfers_sorted.reset_index(drop=True)
-transfers_sorted.index = transfers_sorted.index + 1
-st.dataframe(transfers_sorted.head(20))
+col1, col2 = st.columns(2)
+with col1:
+    st.subheader("Top Tokens by Volume Volume of Transfers")
+    st.dataframe(totals.head(20).reset_index(drop=True).rename_axis(None).set_index(pd.Index(range(1,21))))
+with col2:
+    st.subheader("Top Tokens by Number of Transfers")
+    transfers_sorted = transfers_sorted.reset_index(drop=True)
+    transfers_sorted.index = transfers_sorted.index + 1
+    st.dataframe(transfers_sorted.head(20))
 
 st.success("Dashboard ready ✅")
