@@ -252,10 +252,10 @@ and simplified_status = 'received'
 select "🔀Path", 
 TO_VARCHAR(count(distinct id), '999,999,999,999,999') as "🚀Number of Transfers", 
 TO_VARCHAR(count(distinct user), '999,999,999,999,999') as "👥Number of Users",
-'' || '$' || TO_VARCHAR(round(sum(amount),2), '999,999,999,999,999') as "💸Volume of Transfers ($USD)",
-'' || '$' || TO_VARCHAR(round(avg(amount),2), '999,999,999,999,999') as "📊Avg Volume per Txn ($USD)",
-'' || '$' || TO_VARCHAR(round(sum(fee_usd),2), '999,999,999,999,999') as "⛽Total Fee ($USD)",
-'$' || ' ' || round(avg(fee_usd),2) as "🔥Avg Fee ($USD)"
+'' || '' || TO_VARCHAR(round(sum(amount),2), '999,999,999,999,999') as "💸Volume of Transfers ($USD)",
+'' || '' || TO_VARCHAR(round(avg(amount),2), '999,999,999,999,999') as "📊Avg Volume per Txn ($USD)",
+'' || '' || TO_VARCHAR(round(sum(fee_usd),2), '999,999,999,999,999') as "⛽Total Fee ($USD)",
+'' || '' || round(avg(fee_usd),2) as "🔥Avg Fee ($USD)"
 from axelar_services
 where created_at::date>='{start_str}' and created_at::date<='{end_str}'
 group by 1
