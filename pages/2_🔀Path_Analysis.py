@@ -818,7 +818,7 @@ col3, col4 = st.columns(2)
 with col3:
     fig3 = px.bar(top_usr.sort_values("Number of Users"), x="Number of Users", y="Source Chain", orientation="h", title="Top Source Chains By User",
         labels={"Number of Users": "wallet count", "Source Chain": ""})
-    fig3 = add_bar_labels(fig3, "Number of Users", top_user.sort_values("Number of Users"))
+    fig3 = add_bar_labels(fig3, "Number of Users", top_usr.sort_values("Number of Users"))
     st.plotly_chart(fig3, use_container_width=True)
 
 with col4:
