@@ -315,6 +315,25 @@ TO_VARCHAR(count(distinct user), '999,999,999,999,999') as "👥Number of Users"
 '' || '' || round(avg(fee),2) as "🔥Avg Fee ($USD)"
 from axelar_service
 where created_at::date>='{start_str}' and created_at::date<='{end_str}'
+and
+id not in ('6f01df90bcb4d456c28d85a1f754f1c9c37b922885ea61f915e013aa8a20a5c6_osmosis',
+'0b2b03ecd8c48bb3342754a401240fe5e421a3d74a40def8c1b77758a1976f52_osmosis',
+'21074a86b299d4eaff74645ab8edc22aa3639a36e82df8e7fddfb3c78e8c7250_osmosis',
+'a08cb0274fedf0594f181e6223418f1e7354c5da5285f493eeec70e4379f01bc_kujira',
+'ba0ef39d7fb9b5c7650f2ea982ffb9a1f91263ce899ba1e8b13c161d0bca5e3b_secret-snip',
+'efc018a03cdcfdb25f90d68fc2b06bee6c50c93c4d47ea1343148ea2444652b8_evmos',
+'8e0bc8b78fd2da8b1795752fa98a4775f5dc19dca319b59ebc8a0ac80f39cfe1_osmosis',
+'8eb3363bcf6776bbab9e168662173d6b24aca66f673a7f70ebebacae2d94e575_osmosis',
+'71208b721ada14e26e48386396db03c7099603f452129805fa06442fb712ce85_archway',
+'41e73eb192d4f9c81248c779a990f19899ae25cd3baba24f447af225430eb73e_osmosis',
+'12dcc41fddd2f62e24233a3cb871689ea9d9f0c83c5b3a5ad9b629455cc7ec89_osmosis',
+'562afc565b8c2e87e4018ed96cef222f80b490734fc488fdc80891a7c6f22f55_osmosis',
+'606769d9cd0da39bcc93beb414c6349e3d29d3efd623e0b0829f4805438a3433_crescent',
+'928031faa78c67fb1962822b3105cd359edb936751dce09e2fd807995363d3bc_osmosis',
+'274969809c986ecf98013cd24b56c071df3c68b36a1c243410e866bb5b1304be_kujira',
+'0xfd829bdb624a29b11a54c561d7ce80403607a79a3b4f0c6847dd4f8426274d26-121526',
+'b2eb91cd813b6d107b6e3d526296d464c4e810e3ae02e0d24a1d193deb600d4b_archway',
+'14115388d61f886dc1abbc2ae4cf9f68271d29605137333f9687229af671e3fc_kujira')
 group by 1
 order by 2 desc
     """
