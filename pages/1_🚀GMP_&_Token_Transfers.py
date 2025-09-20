@@ -525,3 +525,95 @@ st.markdown(
     unsafe_allow_html=True
 )
 st.markdown("<br>", unsafe_allow_html=True)
+
+# --- Row 7 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_transfers_path_type(timeframe, start_date, end_date):
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    with axelar_services as (
+
+select created_at, data:value as amount, id,
+(data:call:chain_type) || '' ||  destination_chain_type as "Path Type",
+'GMP' as "Service"
+from axelar.axelscan.fact_gmp
+where simplified_status = 'received' and created_at::date>='{start_str}' and created_at::date<='{end_str}'
+
+union all
+
+select created_at, (data:send:amount * data:link:price) as amount, id, 
+data:time_spent:source_chain_type || '➡' || data:time_spent:destination_chain_type as "Path Type",
+'Token Transfers' as "Service"
+from axelar.axelscan.fact_transfers
+where 
+(data:send:amount) <> ''
+and (data:link:price) <> ''
+and (data:link:price) <> '[]'
+and (data:send:amount * data:link:price) <= 20000000
+and simplified_status = 'received'
+and created_at::date>='{start_str}' and created_at::date<='{end_str}'
+)
+
+select date_trunc('{timeframe}',created_at) as "Date", count(distinct id) as "Transfers Count",
+round(sum(amount),2) as "Transfers Volume", case 
+when "Path Type"='evm➡cosmos' then 'evm➡ibc'
+when "Path Type"='vmvm' then 'evm➡evm'
+when "Path Type"='vmevm' then 'evm➡evm'
+when "Path Type"='axelarnet➡cosmos' then 'axelarnet➡ibc'
+when "Path Type"='cosmos➡cosmos' then 'ibc➡ibc'
+when "Path Type"='cosmos➡axelarnet' then 'ibc➡axelarnet'
+when "Path Type"='cosmosevm' then 'ibc➡evm'
+when "Path Type"='evmcosmos' then 'evm➡ibc'
+when "Path Type"='cosmos➡evm' then 'ibc➡evm'
+when "Path Type"='evmevm' then 'evm➡evm'
+when "Path Type"='cosmoscosmos' then 'ibc➡ibc'
+when "Path Type" is null then 'Not Labeled'
+else "Path Type" end as "Path_Type"
+from axelar_services
+group by 1,4
+order by 1
+    """
+    df = pd.read_sql(query, conn)
+    return df
+    
+# === Load Data ==================================================================
+df_transfers_path_type = load_transfers_path_type(timeframe, start_date, end_date)
+# === Charts: Row 7 ==============================================================
+df_norm = df_transfers_path_type.copy()
+df_norm['total_per_date'] = df_norm.groupby("Date")["Transfers Volume"].transform('sum')
+df_norm['normalized'] = df_norm["Transfers Volume"] / df_norm['total_per_date']
+
+fig1 = go.Figure()
+for Path_Type in df_norm["Path_Type"].unique():
+    df_path_type_volume = df_norm[df_norm["Path_Type"] == Path_Type]
+    fig1.add_trace(go.Bar(x=df_path_type_volume["Date"], y=df_path_type_volume["normalized"], name=Path_Type, text=df_path_type_volume["Transfers Volume"].astype(str),
+            marker_color=color_map.get(Path_Type, None)))
+fig1.update_layout(barmode='stack', title="Volume of Cross-Chain Transfers by Path Type (%Normalized)", xaxis_title="", yaxis=dict(tickformat='%'), legend=dict(
+        orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, title=""))
+fig1.update_traces(textposition='inside')
+
+# ------------------
+df_norm = df_transfers_path_type.copy()
+df_norm['total_per_date'] = df_norm.groupby("Date")["Transfers Count"].transform('sum')
+df_norm['normalized'] = df_norm["Transfers Count"] / df_norm['total_per_date']
+
+fig2 = go.Figure()
+for Path_Type in df_norm["Path_Type"].unique():
+    df_path_type_txn = df_norm[df_norm["Path_Type"] == Path_Type]
+    fig2.add_trace(go.Bar(x=df_path_type_txn["Date"], y=df_path_type_txn["normalized"], name=Path_Type, text=df_path_type_txn["Transfers Count"].astype(str),
+            marker_color=color_map.get(Path_Type, None)))
+fig2.update_layout(barmode='stack', title="Number of Cross-Chain Transfers by Path Type (%Normalized)", xaxis_title="", yaxis=dict(tickformat='%'), legend=dict(
+        orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, title=""))
+fig2.update_traces(textposition='inside')
+
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.plotly_chart(fig1, use_container_width=True)
+
+with col2:
+    st.plotly_chart(fig2, use_container_width=True)
