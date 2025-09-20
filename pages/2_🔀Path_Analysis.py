@@ -205,10 +205,8 @@ with col2:
     
 st.markdown("<br>", unsafe_allow_html=True)
 # --- Row 2: Table ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
-st.markdown(
-    "<h5 style='font-size:18px; margin-bottom:-100px;'>📋 Details of supported chains</h5>", 
-    unsafe_allow_html=True
-)
+st.markdown("<h5 style='font-size:18px; margin-bottom:-100px;'>📋 Details of supported chains</h5>", unsafe_allow_html=True)
+
 chains_df.index = chains_df.index + 1
 st.markdown("<br>", unsafe_allow_html=True)
 st.dataframe(
@@ -227,35 +225,94 @@ def load_path_table(start_date, end_date):
     end_str = end_date.strftime("%Y-%m-%d")
 
     query = f"""
-    with axelar_services as (
+    WITH axelar_service AS (
+  
+  SELECT 
+    created_at, 
+    LOWER(data:send:original_source_chain) AS source_chain, 
+    LOWER(data:send:original_destination_chain) AS destination_chain,
+    sender_address AS user, 
 
-select created_at, data:value as amount, id, to_varchar(data:call:transaction:from) as user,
-cast((data:gas:gas_used_amount) * (data:gas_price_rate:source_token.token_price.usd) AS varchar) AS fee_usd,
-lower((data:call:chain)) || '➡' ||  lower((data:call:returnValues:destinationChain)) as "🔀Path"
-from axelar.axelscan.fact_gmp
-where simplified_status = 'received'
+    CASE 
+      WHEN IS_ARRAY(data:send:amount) THEN NULL
+      WHEN IS_OBJECT(data:send:amount) THEN NULL
+      WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:amount::STRING)
+      ELSE NULL
+    END AS amount,
 
-union all
+    CASE 
+      WHEN IS_ARRAY(data:send:amount) OR IS_ARRAY(data:link:price) THEN NULL
+      WHEN IS_OBJECT(data:send:amount) OR IS_OBJECT(data:link:price) THEN NULL
+      WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL AND TRY_TO_DOUBLE(data:link:price::STRING) IS NOT NULL 
+        THEN TRY_TO_DOUBLE(data:send:amount::STRING) * TRY_TO_DOUBLE(data:link:price::STRING)
+      ELSE NULL
+    END AS amount_usd,
+
+    CASE 
+      WHEN IS_ARRAY(data:send:fee_value) THEN NULL
+      WHEN IS_OBJECT(data:send:fee_value) THEN NULL
+      WHEN TRY_TO_DOUBLE(data:send:fee_value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:fee_value::STRING)
+      ELSE NULL
+    END AS fee,
+
+    id, 
+    'Token Transfers' AS "Service", 
+    data:link:asset::STRING AS raw_asset
+
+  FROM axelar.axelscan.fact_transfers
+  WHERE status = 'executed' AND simplified_status = 'received'
     
-select created_at, (data:send:amount * data:link:price) as amount, id, sender_address as user,
-cast(data:send:fee_value AS varchar) as fee_usd,
-data:send:original_source_chain || '➡' || data:send:original_destination_chain as "🔀Path"
-from axelar.axelscan.fact_transfers
-where 
-(data:send:amount) <> ''
-and (data:link:price) <> ''
-and (data:link:price) <> '[]'
-and (data:send:amount * data:link:price) <= 20000000
-and simplified_status = 'received'
-)
+  UNION ALL
 
-select "🔀Path", 
+  SELECT  
+    created_at,
+    LOWER(data:call.chain::STRING) AS source_chain,
+    LOWER(data:call.returnValues.destinationChain::STRING) AS destination_chain,
+    data:call.transaction.from::STRING AS user,
+
+    CASE 
+      WHEN IS_ARRAY(data:amount) OR IS_OBJECT(data:amount) THEN NULL
+      WHEN TRY_TO_DOUBLE(data:amount::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:amount::STRING)
+      ELSE NULL
+    END AS amount,
+
+    CASE 
+      WHEN IS_ARRAY(data:value) OR IS_OBJECT(data:value) THEN NULL
+      WHEN TRY_TO_DOUBLE(data:value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:value::STRING)
+      ELSE NULL
+    END AS amount_usd,
+
+    COALESCE(
+      CASE 
+        WHEN IS_ARRAY(data:gas:gas_used_amount) OR IS_OBJECT(data:gas:gas_used_amount) 
+          OR IS_ARRAY(data:gas_price_rate:source_token.token_price.usd) OR IS_OBJECT(data:gas_price_rate:source_token.token_price.usd) 
+        THEN NULL
+        WHEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) IS NOT NULL 
+          AND TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING) IS NOT NULL 
+        THEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) * TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING)
+        ELSE NULL
+      END,
+      CASE 
+        WHEN IS_ARRAY(data:fees:express_fee_usd) OR IS_OBJECT(data:fees:express_fee_usd) THEN NULL
+        WHEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING)
+        ELSE NULL
+      END
+    ) AS fee,
+
+    id, 
+    'GMP' AS "Service", 
+    data:symbol::STRING AS raw_asset
+
+  FROM axelar.axelscan.fact_gmp 
+  WHERE status = 'executed' AND simplified_status = 'received')
+
+select (source_chain || '➡' || destination_chain) "🔀Path", 
 TO_VARCHAR(count(distinct id), '999,999,999,999,999') as "🚀Number of Transfers", 
 TO_VARCHAR(count(distinct user), '999,999,999,999,999') as "👥Number of Users",
-'' || '' || TO_VARCHAR(round(sum(amount),2), '999,999,999,999,999') as "💸Volume of Transfers ($USD)",
-'' || '' || TO_VARCHAR(round(avg(amount),2), '999,999,999,999,999') as "📊Avg Volume per Txn ($USD)",
-'' || '' || TO_VARCHAR(round(sum(fee_usd),2), '999,999,999,999,999') as "⛽Total Fee ($USD)",
-'' || '' || round(avg(fee_usd),2) as "🔥Avg Fee ($USD)"
+'' || '' || TO_VARCHAR(round(sum(amount_usd),2), '999,999,999,999,999') as "💸Volume of Transfers ($USD)",
+'' || '' || TO_VARCHAR(round(avg(amount_usd),2), '999,999,999,999,999') as "📊Avg Volume per Txn ($USD)",
+'' || '' || TO_VARCHAR(round(sum(fee),2), '999,999,999,999,999') as "⛽Total Fee ($USD)",
+'' || '' || round(avg(fee),2) as "🔥Avg Fee ($USD)"
 from axelar_services
 where created_at::date>='{start_str}' and created_at::date<='{end_str}'
 group by 1
@@ -368,3 +425,4 @@ with col4:
         labels={"Total Fee": "$USD", "Path": ""})
     fig4 = add_bar_labels(fig4, "Total Fee", top_fee)
     st.plotly_chart(fig4, use_container_width=True)
+
