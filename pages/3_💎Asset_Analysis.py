@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
+import plotly.express as px
 from datetime import datetime, timedelta
 
 # ===================
@@ -89,52 +89,46 @@ full_df = full_df.set_index("timestamp")
 full_df = full_df.groupby(["token", "type"]).resample(timeframe)[["num_txs", "volume"]].sum().reset_index()
 
 # ===================
-# Charts
+# Charts with Plotly
 # ===================
 
-st.subheader("📊 Transfers & Volume Over Time (Clustered Bar)")
-fig, ax = plt.subplots(figsize=(12,6))
-for key, grp in full_df.groupby("token"):
-    ax.bar(grp["timestamp"], grp["num_txs"], label=key)
-plt.legend()
-st.pyplot(fig)
+st.subheader("📊 Transfers Over Time (Clustered Bar)")
+fig = px.bar(full_df, x="timestamp", y="num_txs", color="token", barmode="group")
+st.plotly_chart(fig, use_container_width=True)
+
+st.subheader("📊 Volume Over Time (Clustered Bar)")
+fig = px.bar(full_df, x="timestamp", y="volume", color="token", barmode="group")
+st.plotly_chart(fig, use_container_width=True)
 
 # Horizontal bar for totals
 totals = full_df.groupby("token").sum().sort_values("volume", ascending=False)
 
 st.subheader("📊 Total Transfers by Token (Horizontal Bar)")
-fig, ax = plt.subplots(figsize=(10,6))
-totals["num_txs"].plot(kind="barh", ax=ax)
-st.pyplot(fig)
+fig = px.bar(totals, x="num_txs", y=totals.index, orientation="h")
+st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("📊 Total Volume by Token (Horizontal Bar)")
-fig, ax = plt.subplots(figsize=(10,6))
-totals["volume"].plot(kind="barh", ax=ax)
-st.pyplot(fig)
+fig = px.bar(totals, x="volume", y=totals.index, orientation="h")
+st.plotly_chart(fig, use_container_width=True)
 
 # ITS vs Gateway comparison
-agg_type = full_df.groupby("type").sum()
+agg_type = full_df.groupby("type").sum().reset_index()
 
 st.subheader("📊 Transfers by ITS vs Gateway (Clustered Bar)")
-fig, ax = plt.subplots()
-agg_type[["num_txs"]].plot(kind="bar", ax=ax)
-st.pyplot(fig)
+fig = px.bar(agg_type, x="type", y="num_txs", color="type", barmode="group")
+st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("📊 Volume by ITS vs Gateway (Clustered Bar)")
-fig, ax = plt.subplots()
-agg_type[["volume"]].plot(kind="bar", ax=ax)
-st.pyplot(fig)
+fig = px.bar(agg_type, x="type", y="volume", color="type", barmode="group")
+st.plotly_chart(fig, use_container_width=True)
 
 # Pie charts
 st.subheader("🥧 Share of Transfers (ITS vs Gateway)")
-fig, ax = plt.subplots()
-agg_type["num_txs"].plot(kind="pie", autopct="%1.1f%%", ax=ax)
-st.pyplot(fig)
+fig = px.pie(agg_type, names="type", values="num_txs", hole=0.3)
+st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("🥧 Share of Volume (ITS vs Gateway)")
-fig, ax = plt.subplots()
-agg_type["volume"].plot(kind="pie", autopct="%1.1f%%", ax=ax)
-st.pyplot(fig)
+fig = px.pie(agg_type, names="type", values="volume", hole=0.3)
+st.plotly_chart(fig, use_container_width=True)
 
 st.success("Dashboard ready ✅")
-
