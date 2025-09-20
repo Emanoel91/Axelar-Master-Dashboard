@@ -226,7 +226,6 @@ def load_path_table(start_date, end_date):
 
     query = f"""
     WITH axelar_service AS (
-  
   SELECT 
     created_at, 
     LOWER(data:send:original_source_chain) AS source_chain, 
@@ -356,35 +355,112 @@ def load_top_path(start_date, end_date):
     end_str = end_date.strftime("%Y-%m-%d")
 
     query = f"""
-    with axelar_services as (
+    WITH axelar_service AS (
+  SELECT 
+    created_at, 
+    LOWER(data:send:original_source_chain) AS source_chain, 
+    LOWER(data:send:original_destination_chain) AS destination_chain,
+    sender_address AS user, 
 
-select created_at, data:value as amount, id, to_varchar(data:call:transaction:from) as user,
-cast((data:gas:gas_used_amount) * (data:gas_price_rate:source_token.token_price.usd) AS varchar) AS fee_usd,
-lower((data:call:chain)) || '➡' ||  lower((data:call:returnValues:destinationChain)) as "Path"
-from axelar.axelscan.fact_gmp
-where simplified_status = 'received'
+    CASE 
+      WHEN IS_ARRAY(data:send:amount) THEN NULL
+      WHEN IS_OBJECT(data:send:amount) THEN NULL
+      WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:amount::STRING)
+      ELSE NULL
+    END AS amount,
 
-union all
+    CASE 
+      WHEN IS_ARRAY(data:send:amount) OR IS_ARRAY(data:link:price) THEN NULL
+      WHEN IS_OBJECT(data:send:amount) OR IS_OBJECT(data:link:price) THEN NULL
+      WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL AND TRY_TO_DOUBLE(data:link:price::STRING) IS NOT NULL 
+        THEN TRY_TO_DOUBLE(data:send:amount::STRING) * TRY_TO_DOUBLE(data:link:price::STRING)
+      ELSE NULL
+    END AS amount_usd,
+
+    CASE 
+      WHEN IS_ARRAY(data:send:fee_value) THEN NULL
+      WHEN IS_OBJECT(data:send:fee_value) THEN NULL
+      WHEN TRY_TO_DOUBLE(data:send:fee_value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:fee_value::STRING)
+      ELSE NULL
+    END AS fee,
+
+    id, 
+    'Token Transfers' AS "Service", 
+    data:link:asset::STRING AS raw_asset
+
+  FROM axelar.axelscan.fact_transfers
+  WHERE status = 'executed' AND simplified_status = 'received'
     
-select created_at, (data:send:amount * data:link:price) as amount, id, sender_address as user,
-cast(data:send:fee_value AS varchar) as fee_usd,
-data:send:original_source_chain || '➡' || data:send:original_destination_chain as "Path"
-from axelar.axelscan.fact_transfers
-where 
-(data:send:amount) <> ''
-and (data:link:price) <> ''
-and (data:link:price) <> '[]'
-and (data:send:amount * data:link:price) <= 20000000
-and simplified_status = 'received'
-)
+  UNION ALL
 
-select "Path", 
-count(distinct id)as "Number of Transfers", 
-count(distinct user) as "Number of Users",
-round(sum(amount),2) as "Volume of Transfers",
-round(sum(fee_usd),2) as "Total Fee"
-from axelar_services
+  SELECT  
+    created_at,
+    LOWER(data:call.chain::STRING) AS source_chain,
+    LOWER(data:call.returnValues.destinationChain::STRING) AS destination_chain,
+    data:call.transaction.from::STRING AS user,
+
+    CASE 
+      WHEN IS_ARRAY(data:amount) OR IS_OBJECT(data:amount) THEN NULL
+      WHEN TRY_TO_DOUBLE(data:amount::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:amount::STRING)
+      ELSE NULL
+    END AS amount,
+
+    CASE 
+      WHEN IS_ARRAY(data:value) OR IS_OBJECT(data:value) THEN NULL
+      WHEN TRY_TO_DOUBLE(data:value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:value::STRING)
+      ELSE NULL
+    END AS amount_usd,
+
+    COALESCE(
+      CASE 
+        WHEN IS_ARRAY(data:gas:gas_used_amount) OR IS_OBJECT(data:gas:gas_used_amount) 
+          OR IS_ARRAY(data:gas_price_rate:source_token.token_price.usd) OR IS_OBJECT(data:gas_price_rate:source_token.token_price.usd) 
+        THEN NULL
+        WHEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) IS NOT NULL 
+          AND TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING) IS NOT NULL 
+        THEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) * TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING)
+        ELSE NULL
+      END,
+      CASE 
+        WHEN IS_ARRAY(data:fees:express_fee_usd) OR IS_OBJECT(data:fees:express_fee_usd) THEN NULL
+        WHEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING)
+        ELSE NULL
+      END
+    ) AS fee,
+
+    id, 
+    'GMP' AS "Service", 
+    data:symbol::STRING AS raw_asset
+
+  FROM axelar.axelscan.fact_gmp 
+  WHERE status = 'executed' AND simplified_status = 'received')
+
+select (source_chain || '➡' || destination_chain) "Path", 
+count(distinct id) as "Number of Transfers", 
+count(distinct user)as "Number of Users",
+round(sum(amount_usd),2) as "Volume of Transfers",
+round(sum(fee),2) as "Total Fee"
+from axelar_service
 where created_at::date>='{start_str}' and created_at::date<='{end_str}'
+and
+id not in ('6f01df90bcb4d456c28d85a1f754f1c9c37b922885ea61f915e013aa8a20a5c6_osmosis',
+'0b2b03ecd8c48bb3342754a401240fe5e421a3d74a40def8c1b77758a1976f52_osmosis',
+'21074a86b299d4eaff74645ab8edc22aa3639a36e82df8e7fddfb3c78e8c7250_osmosis',
+'a08cb0274fedf0594f181e6223418f1e7354c5da5285f493eeec70e4379f01bc_kujira',
+'ba0ef39d7fb9b5c7650f2ea982ffb9a1f91263ce899ba1e8b13c161d0bca5e3b_secret-snip',
+'efc018a03cdcfdb25f90d68fc2b06bee6c50c93c4d47ea1343148ea2444652b8_evmos',
+'8e0bc8b78fd2da8b1795752fa98a4775f5dc19dca319b59ebc8a0ac80f39cfe1_osmosis',
+'8eb3363bcf6776bbab9e168662173d6b24aca66f673a7f70ebebacae2d94e575_osmosis',
+'71208b721ada14e26e48386396db03c7099603f452129805fa06442fb712ce85_archway',
+'41e73eb192d4f9c81248c779a990f19899ae25cd3baba24f447af225430eb73e_osmosis',
+'12dcc41fddd2f62e24233a3cb871689ea9d9f0c83c5b3a5ad9b629455cc7ec89_osmosis',
+'562afc565b8c2e87e4018ed96cef222f80b490734fc488fdc80891a7c6f22f55_osmosis',
+'606769d9cd0da39bcc93beb414c6349e3d29d3efd623e0b0829f4805438a3433_crescent',
+'928031faa78c67fb1962822b3105cd359edb936751dce09e2fd807995363d3bc_osmosis',
+'274969809c986ecf98013cd24b56c071df3c68b36a1c243410e866bb5b1304be_kujira',
+'0xfd829bdb624a29b11a54c561d7ce80403607a79a3b4f0c6847dd4f8426274d26-121526',
+'b2eb91cd813b6d107b6e3d526296d464c4e810e3ae02e0d24a1d193deb600d4b_archway',
+'14115388d61f886dc1abbc2ae4cf9f68271d29605137333f9687229af671e3fc_kujira')
 group by 1
 order by 2 desc
     """
