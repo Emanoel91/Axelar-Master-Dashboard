@@ -217,7 +217,7 @@ st.dataframe(
     height=600
 )
 # --- Row 3 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-st.markdown("<h5 style='font-size:18px; margin-bottom:-100px;'>Monitoring Cross-Chain Paths</h5>", unsafe_allow_html=True)
+st.markdown("<h5 style='font-size:18px; margin-bottom:1px;'>Monitoring Cross-Chain Paths</h5>", unsafe_allow_html=True)
 
 @st.cache_data
 def load_path_table(start_date, end_date):
