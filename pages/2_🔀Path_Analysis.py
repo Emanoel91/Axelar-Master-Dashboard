@@ -284,7 +284,7 @@ def load_top_path(start_date, end_date):
 
 select created_at, data:value as amount, id, to_varchar(data:call:transaction:from) as user,
 cast((data:gas:gas_used_amount) * (data:gas_price_rate:source_token.token_price.usd) AS varchar) AS fee_usd,
-lower((data:call:chain)) || '➡' ||  lower((data:call:returnValues:destinationChain)) as "🔀Path"
+lower((data:call:chain)) || '➡' ||  lower((data:call:returnValues:destinationChain)) as "Path"
 from axelar.axelscan.fact_gmp
 where simplified_status = 'received'
 
@@ -292,7 +292,7 @@ union all
     
 select created_at, (data:send:amount * data:link:price) as amount, id, sender_address as user,
 cast(data:send:fee_value AS varchar) as fee_usd,
-data:send:original_source_chain || '➡' || data:send:original_destination_chain as "🔀Path"
+data:send:original_source_chain || '➡' || data:send:original_destination_chain as "Path"
 from axelar.axelscan.fact_transfers
 where 
 (data:send:amount) <> ''
@@ -325,43 +325,22 @@ top_fee = df_top_path.nlargest(10, "Total Fee")
 col1, col2 = st.columns(2)
 
 with col1:
-    fig1 = px.bar(
-        top_vol.sort_values("Volume of Transfers"),
-        x="Volume of Transfers", y="Path",
-        orientation="h",
-        title="Top Paths By Volume",
-        labels={"Volume of Transfers": "$USD", "Path": ""}
-    )
+    fig1 = px.bar(top_vol.sort_values("Volume of Transfers"), x="Volume of Transfers", y="Path", orientation="h", title="Top Paths By Volume", 
+                  labels={"Volume of Transfers": "$USD", "Path": ""})
     st.plotly_chart(fig1, use_container_width=True)
 
 with col2:
-    fig2 = px.bar(
-        top_txn.sort_values("Number of Transfers"),
-        x="Number of Transfers", y="Path",
-        orientation="h",
-        title="Top Paths By Transaction",
-        labels={"Number of Transfers": "Txns count", "Path": ""}
-    )
+    fig2 = px.bar(top_txn.sort_values("Number of Transfers"), x="Number of Transfers", y="Path", orientation="h", title="Top Paths By Transaction",
+                  labels={"Number of Transfers": "Txns count", "Path": ""})
     st.plotly_chart(fig2, use_container_width=True)
 
 col3, col4 = st.columns(2)
 
 with col3:
-    fig1 = px.bar(
-        top_usr.sort_values("Number of Users"),
-        x="Number of Users", y="Path",
-        orientation="h",
-        title="Top Paths By User",
-        labels={"Number of Users": "wallet count", "Path": ""}
-    )
+    fig1 = px.bar(top_usr.sort_values("Number of Users"), x="Number of Users", y="Path", orientation="h", title="Top Paths By User",
+                  labels={"Number of Users": "wallet count", "Path": ""})
     st.plotly_chart(fig1, use_container_width=True)
 
 with col4:
-    fig2 = px.bar(
-        top_fee.sort_values("Total Fee"),
-        x="Total Fee", y="Path",
-        orientation="h",
-        title="Highest Fee-Collecting Paths",
-        labels={"Total Fee": "$USD", "Path": ""}
-    )
+    fig2 = px.bar(top_fee.sort_values("Total Fee"), x="Total Fee", y="Path", orientation="h", title="Highest Fee-Collecting Paths", labels={"Total Fee": "$USD", "Path": ""})
     st.plotly_chart(fig2, use_container_width=True)
