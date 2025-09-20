@@ -131,6 +131,56 @@ chains_df = pd.DataFrame([
     for chain in chains_data
 ])
 # --- Row 2: KPIs ----------------------------------------------------------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_crosschain_stats(start_date, end_date):
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    WITH axelar_service AS (
+  SELECT 
+    created_at, 
+    LOWER(data:send:original_source_chain) AS source_chain, 
+    LOWER(data:send:original_destination_chain) AS destination_chain,
+    sender_address AS user, case 
+      WHEN IS_ARRAY(data:send:fee_value) THEN NULL
+      WHEN IS_OBJECT(data:send:fee_value) THEN NULL
+      WHEN TRY_TO_DOUBLE(data:send:fee_value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:fee_value::STRING)
+      ELSE NULL END AS fee
+  FROM axelar.axelscan.fact_transfers
+  WHERE status = 'executed' AND simplified_status = 'received'
+
+  UNION ALL
+
+  SELECT  
+    created_at,
+    LOWER(data:call.chain::STRING) AS source_chain,
+    LOWER(data:call.returnValues.destinationChain::STRING) AS destination_chain,
+    data:call.transaction.from::STRING AS user, COALESCE( CASE 
+        WHEN IS_ARRAY(data:gas:gas_used_amount) OR IS_OBJECT(data:gas:gas_used_amount) 
+          OR IS_ARRAY(data:gas_price_rate:source_token.token_price.usd) OR    IS_OBJECT(data:gas_price_rate:source_token.token_price.usd) 
+        THEN NULL
+        WHEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) IS NOT NULL 
+          AND TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING) IS NOT NULL 
+        THEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) * TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING)
+        ELSE NULL END, CASE 
+        WHEN IS_ARRAY(data:fees:express_fee_usd) OR IS_OBJECT(data:fees:express_fee_usd) THEN NULL
+        WHEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING)
+        ELSE NULL END) AS fee
+  FROM axelar.axelscan.fact_gmp 
+  WHERE status = 'executed' AND simplified_status = 'received')
+
+SELECT count(distinct (source_chain || '➡' || destination_chain)) as "Unique Paths"
+from axelar_service
+where created_at::date>='{start_str}' and created_at::date<='{end_str}'
+    """
+    df = pd.read_sql(query, conn)
+    return df
+
+# === Load Kpi =====================================
+df_crosschain_stats = load_crosschain_stats(start_date, end_date)
+
 total_chains = len(chains_df)
 card_style = """
     <div style="
@@ -147,9 +197,12 @@ card_style = """
 """
 
 st.markdown("<br>", unsafe_allow_html=True)
-col1, col2, col3 = st.columns([1,2,1])
+col1, col2 = st.columns(2)
+with col1:
+    st.markdown(card_style.format(label="🧩Total Supported Chains", value=total_chains), unsafe_allow_html=True)
+
 with col2:
-    st.markdown(card_style.format(label="🧩 Total Supported Chains", value=total_chains), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="🔀Number of Paths", value=f"{df_crosschain_stats['Unique Paths'][0]:,}"), unsafe_allow_html=True)
 
 # --- Table ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 st.markdown(
