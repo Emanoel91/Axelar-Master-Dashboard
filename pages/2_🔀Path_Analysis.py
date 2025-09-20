@@ -114,10 +114,7 @@ st.markdown(
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- Getting Chains Data from API ---------------------------------------------------------------------------------------
-st.markdown(
-    "<h5 style='font-size:18px; margin-bottom:-100px;'>📋 Details of supported chains</h5>", 
-    unsafe_allow_html=True
-)
+
 url = "https://api.axelarscan.io/api/getChains"
 response = requests.get(url)
 chains_data = response.json()
@@ -155,6 +152,10 @@ with col2:
     st.markdown(card_style.format(label="🧩 Total Supported Chains", value=total_chains), unsafe_allow_html=True)
 
 # --- Table ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+st.markdown(
+    "<h5 style='font-size:18px; margin-bottom:-100px;'>📋 Details of supported chains</h5>", 
+    unsafe_allow_html=True
+)
 chains_df.index = chains_df.index + 1
 st.markdown("<br>", unsafe_allow_html=True)
 st.dataframe(
