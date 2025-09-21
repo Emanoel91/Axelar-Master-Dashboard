@@ -784,10 +784,10 @@ def load_user_day(start_date, end_date):
 # === Load Data: Row 5 =======================================
 df_user_day = load_user_day(start_date, end_date)
 # === Chart: Row 5 ===========================================
-fig_bulb = px.scatter(df_user_day, x="Active Days", y="Number of Users", title="Distribution of Users According to the Number of Unique Days They Were Active")
-fig_bulb.update_traces(mode='markers')
+fig_bulb = px.bar(df_user_day, x="Active Days", y="Number of Users", color="Active Days", title="Distribution of Users According to the Number of Unique Days They Were Active")
 fig_bulb.update_layout(yaxis=dict(title="Number of Users", type="log"), xaxis=dict(title="Number of Days of Activity"))
 st.plotly_chart(fig_bulb, use_container_width=True)
+
 # --- Row 6 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
 def load_user_week(start_date, end_date):
