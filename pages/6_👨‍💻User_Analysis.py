@@ -650,7 +650,7 @@ def load_distribution_user_route(start_date, end_date):
             when (count(distinct (source_chain || '➡' || destination_chain)) > 10) then 'Cross-Chain Masters (n>10)'
     end as "Class"
     FROM axelar_service
-    where created_at::date>='{start_str}' and created_at::date<='{end_str}' and
+    where created_at::date>='{start_str}' and created_at::date<='{end_str}' and source_chain is not null and destination_chain is not null and 
     id not in ('6f01df90bcb4d456c28d85a1f754f1c9c37b922885ea61f915e013aa8a20a5c6_osmosis',
     '0b2b03ecd8c48bb3342754a401240fe5e421a3d74a40def8c1b77758a1976f52_osmosis',
     '21074a86b299d4eaff74645ab8edc22aa3639a36e82df8e7fddfb3c78e8c7250_osmosis',
