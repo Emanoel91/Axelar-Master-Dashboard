@@ -273,7 +273,7 @@ with col2:
     fig2.update_layout(xaxis_title="", yaxis_title="wallet count",  yaxis2=dict(title="%", overlaying="y", side="right"), template="plotly_white",
                       legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5))
     st.plotly_chart(fig2, use_container_width=True)
-
+# --- Row 3 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 st.markdown(
     """
     <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
@@ -283,3 +283,18 @@ st.markdown(
     unsafe_allow_html=True
 )
 st.markdown("<br>", unsafe_allow_html=True)
+
+# --- Info Box ---
+st.markdown(
+    """
+    <div style="background-color: #a3fcbc; padding: 15px; border-radius: 10px; border: 1px solid #a3fcbc;">
+        Distribution of Users by Transfer Volume: Categorizes users based on their total transfer volume.
+        Distribution of Transfers by Transaction Size: Categorizes transactions based on their individual transfer size.
+        Distribution of Users by Number of Transfers: Groups users according to the total number of transfers they have conducted.
+        User Activity by Number of Cross-Chain Routes: Classifies users based on the number of cross-chain routes they utilize for transferring assets.
+        Distribution of Users by Unique Active Days: Measures user activity by the number of unique days they engaged with Axelar interchain services. 
+        Similar metrics were also calculated for weekly and monthly activity.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
