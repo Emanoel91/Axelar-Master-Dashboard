@@ -112,10 +112,10 @@ with tabs[0]:
         timeframe = st.selectbox("Select Time Frame", ["month", "week", "day"], key="selectbox_1")
 
     with col2:
-        start_date = st.date_input("Start Date", value=pd.to_datetime("2023-12-01", key="date_input_1"))
+        start_date = st.date_input("Start Date", value=pd.to_datetime("2023-12-01"), key="date_input_1")
 
     with col3:
-        end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30", key="date_input_4"))
+        end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30"), key="date_input_2")
     # --- Fetch Data from APIs --------------------------------------------------------------------------------------------------------
     @st.cache_data
     def load_interchain_stats(start_date, end_date):
@@ -1130,9 +1130,9 @@ with tabs[1]:
 
     col1, col2 = st.columns(2)
     with col1:
-        start_date = st.date_input("Start Date", value=pd.to_datetime("2023-12-01", key="date_input_2"))
+        start_date = st.date_input("Start Date", value=pd.to_datetime("2023-12-01"), key="date_input_3")
     with col2:
-        end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30", key="date_input_5"))
+        end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30"), key="date_input_4")
 
     df, symbol_to_image = load_data(start_date, end_date)
 
@@ -1261,10 +1261,10 @@ with tabs[2]:
         timeframe = st.selectbox("Select Time Frame", ["month", "week", "day"], key="selectbox_2")
 
     with col2:
-        start_date = st.date_input("Start Date", value=pd.to_datetime("2023-12-01", key="date_input_3"))
+        start_date = st.date_input("Start Date", value=pd.to_datetime("2023-12-01"), key="date_input_5")
 
     with col3:
-        end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30", key="date_input_6"))
+        end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30"), key="date_input_6")
 
 
     # --- Row 1 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1773,3 +1773,4 @@ with tabs[2]:
     df_display.index = df_display.index + 1
     df_display = df_display.applymap(lambda x: f"{x:,}" if isinstance(x, (int, float)) else x)
     st.dataframe(df_display, use_container_width=True)
+
