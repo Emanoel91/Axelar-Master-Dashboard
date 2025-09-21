@@ -102,6 +102,15 @@ with col2:
     start_date = st.date_input("Start Date", value=pd.to_datetime("2022-01-01"))
 with col3:
     end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30"))
+
+st.markdown(
+    """
+    <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Analysis of Axelar Users</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 # --- Row 1 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
 def load_user_stats(start_date, end_date):
