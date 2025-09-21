@@ -112,7 +112,8 @@ def convert_timestamp_series(s):
 # Streamlit UI
 st.set_page_config(page_title="Axelar Token Dashboard", layout="wide")
 st.title("💎Asset Analysis")
-
+st.info("📊 Charts initially display data for a default time range. Select a custom range to view results for your desired period.")
+st.info("⏳ On-chain data retrieval may take a few moments. Please wait while the results load.")
 # Time filters
 col1, col2, col3 = st.columns(3)
 with col1:
