@@ -288,10 +288,10 @@ st.markdown("<br>", unsafe_allow_html=True)
 st.markdown(
     """
     <div style="background-color: #a3fcbc; padding: 15px; border-radius: 10px; border: 1px solid #a3fcbc;">
-        <strong>Distribution of Users by Transfer Volume:</strong> Categorizes users based on their <strong>total transfer volume</strong>.<br><br>
-        <strong>Distribution of Transfers by Transaction Size:</strong> Categorizes transactions based on their <strong>individual transfer size</strong>.<br><br>
-        <strong>Distribution of Users by Number of Transfers:</strong> Groups users according to the <strong>total number of transfers</strong> they have conducted.<br><br>
-        <strong>User Activity by Number of Cross-Chain Routes:</strong> Classifies users based on the <strong>number of cross-chain routes</strong> they utilize for 
+        <strong>🔸Distribution of Users by Transfer Volume:</strong> Categorizes users based on their <strong>total transfer volume</strong>.<br><br>
+        <strong>🔸Distribution of Transfers by Transaction Size:</strong> Categorizes transactions based on their <strong>individual transfer size</strong>.<br><br>
+        <strong>🔸Distribution of Users by Number of Transfers:</strong> Groups users according to the <strong>total number of transfers</strong> they have conducted.<br><br>
+        <strong>🔸User Activity by Number of Cross-Chain Routes:</strong> Classifies users based on the <strong>number of cross-chain routes</strong> they utilize for 
         transferring assets.<br><br><strong>Distribution of Users by Unique Active Days/Weeks/Months:</strong> Measures user activity by 
         the <strong>number of unique days/weeks/months</strong> they 
         engaged with Axelar interchain services.<br><br>
