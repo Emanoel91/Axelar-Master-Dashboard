@@ -88,7 +88,7 @@ conn = snowflake.connector.connect(
     schema=schema
 )
 # --- Title --------------------------------------------------------------------------------------------
-st.title("📑 GMP Contracts")
+st.title("📑Contract Analysis")
 
 # --- Fetch Data --------------------------------------------------------------------------------------
 @st.cache_data(ttl=300)
