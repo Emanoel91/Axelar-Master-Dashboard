@@ -476,7 +476,8 @@ color_scale = {
     '100<V<=1k$': '#3afebc',
     '1k<V<=10k$': '#0dffae',
     '10k<V<=100k$': '#06d792',
-    'V>100k$': '#01b378'
+    'V>100k$': '#01b378',
+    'No Volume': '#ffcf68'
 }
 
 fig_donut_txn_volume = px.pie(df_distribution_txn_size, names="Class", values="Number of Transfers", title="Distribution of Transfers By Transaction Size", hole=0.5, color="Class",
@@ -494,6 +495,7 @@ color_scale = {
     '10k<V<=100k$': '#06d792',
     '100k<V<=1m$': '#01b378',
     'V>1m$': '#faad29',
+    'No Volume': '#ffcf68'
 }
 
 fig_donut_user_size = px.pie(df_distribution_user_size, names="Class", values="Number of Users", title="Distribution of Users By Transfers Volume", hole=0.5, 
