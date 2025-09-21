@@ -291,9 +291,9 @@ st.markdown(
         <strong>Distribution of Users by Transfer Volume:</strong> Categorizes users based on their <strong>total transfer volume</strong>.<br><br>
         <strong>Distribution of Transfers by Transaction Size:</strong> Categorizes transactions based on their <strong>individual transfer size</strong>.<br><br>
         <strong>Distribution of Users by Number of Transfers:</strong> Groups users according to the <strong>total number of transfers</strong> they have conducted.<br><br>
-        <strong>User Activity by Number of Cross-Chain Routes:</strong> Classifies users based on the <strong>number of cross-chain routes</strong> they utilize for transferring assets.<br><br>
-        <strong>Distribution of Users by Unique Active Days:</strong> Measures user activity by the <strong>number of unique days</strong> they engaged with Axelar interchain services.<br><br>
-        Similar metrics were also calculated for <strong>weekly</strong> and <strong>monthly activity</strong>.
+        <strong>User Activity by Number of Cross-Chain Routes:</strong> Classifies users based on the <strong>number of cross-chain routes</strong> they utilize for 
+        transferring assets.<br><br><strong>Distribution of Users by Unique Active Days:</strong> Measures user activity by the <strong>number of unique days</strong> they 
+        engaged with Axelar interchain services.<br><br>Similar metrics were also calculated for <strong>weekly</strong> and <strong>monthly activity</strong>.
     </div>
     """,
     unsafe_allow_html=True
