@@ -485,8 +485,6 @@ fig_donut_txn_volume.update_traces(textposition='inside', textinfo='percent+labe
 fig_donut_txn_volume.update_layout(showlegend=True, legend=dict(orientation="v", y=0.5, x=1.1))
 
 # ---------------------------------------
-
-    when sum(amount_usd)>1000000 then 'V>1m$'
 color_scale = {
     'V<=1$': '#bdfde8',       
     '1<V<=10$': '#9dfcdc',
