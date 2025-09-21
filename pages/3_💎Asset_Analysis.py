@@ -223,7 +223,8 @@ with col2:
 # Top tokens tables
 col1, col2 = st.columns(2)
 with col1:
-    st.subheader("Top Tokens by Volume Volume of Transfers")
+    st.markdown("<h3 style='font-size:15px;'>Top Tokens by Volume Volume of Transfers</h3>", unsafe_allow_html=True)
+
     st.dataframe(totals.head(20).reset_index(drop=True).rename_axis(None).set_index(pd.Index(range(1,21))))
 with col2:
     st.subheader("Top Tokens by Number of Transfers")
