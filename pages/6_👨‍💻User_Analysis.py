@@ -680,7 +680,7 @@ def load_distribution_user_route(start_date, end_date):
 
 # === Load Data: Row 4 ==============================================================
 df_distribution_user_txncount = load_distribution_user_txncount(start_date, end_date)
-df__distribution_user_route` = load_distribution_user_route(start_date, end_date)
+df__distribution_user_route = load_distribution_user_route(start_date, end_date)
 # === Charts: Row 4 =================================================================
 bar_fig = px.bar(df_distribution_user_txncount, x="Class", y="Number of Users", title="Distribution of Users By Number of Transfers", color_discrete_sequence=["#00da98"])
 bar_fig.update_layout(xaxis_title=" ", yaxis_title="Wallet count", bargap=0.2)
