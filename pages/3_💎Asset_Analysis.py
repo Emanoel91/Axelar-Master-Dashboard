@@ -211,12 +211,12 @@ st.plotly_chart(fig, use_container_width=True)
 agg_type = grouped.groupby("type")[ ["num_txs","volume"] ].sum().reset_index()
 col1, col2 = st.columns(2)
 with col1:
-    st.subheader("Share of Transfers: ITS vs Gateway")
+    st.markdown("<h3 style='font-size:25px;'>Share of Transfers: ITS vs Gateway</h3>", unsafe_allow_html=True)
     fig = px.pie(agg_type, names="type", values="num_txs", hole=0.3)
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
-    st.subheader("Share of Volume: ITS vs Gateway ($USD)")
+    st.markdown("<h3 style='font-size:25px;'>Share of Volume: ITS vs Gateway ($USD)</h3>", unsafe_allow_html=True)
     fig = px.pie(agg_type, names="type", values="volume", hole=0.3)
     st.plotly_chart(fig, use_container_width=True)
 
