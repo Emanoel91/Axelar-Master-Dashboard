@@ -181,13 +181,13 @@ totals = totals.sort_values("volume", ascending=False)
 # Two horizontal bar charts side by side
 col1, col2 = st.columns(2)
 with col1:
-    st.subheader("Total Number of Transfers by Token")
+    st.markdown("<h3 style='font-size:25px;'>Total Number of Transfers by Token</h3>", unsafe_allow_html=True)
     transfers_sorted = totals.sort_values("num_txs", ascending=False)
     fig = px.bar(transfers_sorted, x="num_txs", y="token", orientation='h')
     st.plotly_chart(fig, use_container_width=True)
 
 with col2:
-    st.subheader("Total Volume of Transfers by Token ($USD)")
+    st.markdown("<h3 style='font-size:25px;'>Total Volume of Transfers by Token ($USD)</h3>", unsafe_allow_html=True)
     fig = px.bar(totals, x="volume", y="token", orientation='h')
     st.plotly_chart(fig, use_container_width=True)
 
@@ -224,8 +224,8 @@ with col2:
 col1, col2 = st.columns(2)
 with col1:
     st.markdown("<h3 style='font-size:25px;'>Top Tokens by Volume of Transfers</h3>", unsafe_allow_html=True)
-
     st.dataframe(totals.head(20).reset_index(drop=True).rename_axis(None).set_index(pd.Index(range(1,21))))
+    
 with col2:
     st.markdown("<h3 style='font-size:25px;'>Top Tokens by Number of Transfers</h3>", unsafe_allow_html=True)
     transfers_sorted = transfers_sorted.reset_index(drop=True)
