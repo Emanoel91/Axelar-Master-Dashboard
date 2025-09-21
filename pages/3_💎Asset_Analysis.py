@@ -223,11 +223,11 @@ with col2:
 # Top tokens tables
 col1, col2 = st.columns(2)
 with col1:
-    st.markdown("<h3 style='font-size:30px;'>Top Tokens by Volume of Transfers</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='font-size:25px;'>Top Tokens by Volume of Transfers</h3>", unsafe_allow_html=True)
 
     st.dataframe(totals.head(20).reset_index(drop=True).rename_axis(None).set_index(pd.Index(range(1,21))))
 with col2:
-    st.markdown("<h3 style='font-size:30px;'>Top Tokens by Number of Transfers</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='font-size:25px;'>Top Tokens by Number of Transfers</h3>", unsafe_allow_html=True)
     transfers_sorted = transfers_sorted.reset_index(drop=True)
     transfers_sorted.index = transfers_sorted.index + 1
     st.dataframe(transfers_sorted.head(20))
