@@ -111,6 +111,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+st.markdown("<br>", unsafe_allow_html=True)
 # --- Row 1 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
 def load_user_stats(start_date, end_date):
