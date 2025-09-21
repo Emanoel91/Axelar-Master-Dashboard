@@ -58,55 +58,13 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-
-snowflake_secrets = st.secrets["snowflake"]
-user = snowflake_secrets["user"]
-account = snowflake_secrets["account"]
-private_key_str = snowflake_secrets["private_key"]
-warehouse = snowflake_secrets.get("warehouse", "")
-database = snowflake_secrets.get("database", "")
-schema = snowflake_secrets.get("schema", "")
-
-private_key_pem = f"-----BEGIN PRIVATE KEY-----\n{private_key_str}\n-----END PRIVATE KEY-----".encode("utf-8")
-private_key = serialization.load_pem_private_key(
-    private_key_pem,
-    password=None,
-    backend=default_backend()
-)
-private_key_bytes = private_key.private_bytes(
-    encoding=serialization.Encoding.DER,
-    format=serialization.PrivateFormat.PKCS8,
-    encryption_algorithm=serialization.NoEncryption()
-)
-
-conn = snowflake.connector.connect(
-    user=user,
-    account=account,
-    private_key=private_key_bytes,
-    warehouse=warehouse,
-    database=database,
-    schema=schema
-)
-
-# --- Date Inputs ---------------------------------------------------------------------------------------------------
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    timeframe = st.selectbox("Select Time Frame", ["month", "week", "day"])
-
-with col2:
-    start_date = st.date_input("Start Date", value=pd.to_datetime("2023-12-01"))
-
 tabs = st.tabs(["🚀 Interchain Transfers", "✨ ITS Tokens", "📑 Token Deployments"])
 
 with tabs[0]:
     # === ITS Transfers Analysis ===
 
     # --- Page Config ------------------------------------------------------------------------------------------------------
-    ",
-        page_icon="https://pbs.twimg.com/profile_images/1869486848646537216/rs71wCQo_400x400.jpg",
-        layout="wide"
-    )
+
 
     # --- Title -----------------------------------------------------------------------------------------------------
     st.title("🚀Interchain Transfers")
@@ -115,11 +73,13 @@ with tabs[0]:
     st.info("⏳On-chain data retrieval may take a few moments. Please wait while the results load.")
 
     # --- Sidebar Footer Slightly Left-Aligned ---
+
+
     # --- Snowflake Connection ----------------------------------------------------------------------------------------
-    snowflake_secrets = st.secrets["snowflake"]
-    user = snowflake_secrets["user"]
-    account = snowflake_secrets["account"]
-    private_key_str = snowflake_secrets["private_key"]
+    snowflake_secrets = st.secrets['snowflake']
+    user = snowflake_secrets['user']
+    account = snowflake_secrets['account']
+    private_key_str = snowflake_secrets['private_key']
     warehouse = snowflake_secrets.get("warehouse", "")
     database = snowflake_secrets.get("database", "")
     schema = snowflake_secrets.get("schema", "")
@@ -159,13 +119,13 @@ with tabs[0]:
     # --- Fetch Data from APIs --------------------------------------------------------------------------------------------------------
     @st.cache_data
     def load_interchain_stats(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
         query = f"""
         WITH axelar_service AS (
-  
+
       SELECT  created_at, LOWER(data:call.chain::STRING) AS source_chain, LOWER(data:call.returnValues.destinationChain::STRING) AS destination_chain,
         data:call.transaction.from::STRING AS user, CASE 
           WHEN IS_ARRAY(data:amount) OR IS_OBJECT(data:amount) THEN NULL
@@ -213,24 +173,24 @@ with tabs[0]:
     for url in api_urls:
         response = requests.get(url)
         if response.status_code == 200:
-            data = response.json()["data"]
+            data = response.json()['data']
             df = pd.DataFrame(data)
-            df["timestamp"] = pd.to_datetime(df["timestamp"], unit='ms')
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             dfs.append(df)
         else:
             st.error(f"Failed to fetch data from {url}")
 
     # --- Combine and Filter ------------------------------------------------------------------------------------------------
     df_all = pd.concat(dfs)
-    df_all = df_all[(df_all["timestamp"].dt.date >= start_date) & (df_all["timestamp"].dt.date <= end_date)]
+    df_all = df_all[(df_all['timestamp'].dt.date >= start_date) & (df_all['timestamp'].dt.date <= end_date)]
 
     # --- Aggregate by Timeframe ----------------------------------------------------------------------------------------
     if timeframe == "week":
-        df_all["period"] = df_all["timestamp"].dt.to_period("W").apply(lambda r: r.start_time)
+        df_all['period'] = df_all['timestamp'].dt.to_period("W").apply(lambda r: r.start_time)
     elif timeframe == "month":
-        df_all["period"] = df_all["timestamp"].dt.to_period("M").apply(lambda r: r.start_time)
+        df_all['period'] = df_all['timestamp'].dt.to_period("M").apply(lambda r: r.start_time)
     else:
-        df_all["period"] = df_all["timestamp"]
+        df_all['period'] = df_all['timestamp']
 
     agg_df = df_all.groupby("period").agg({
         "num_txs": "sum",
@@ -238,8 +198,8 @@ with tabs[0]:
     }).reset_index()
 
     agg_df = agg_df.sort_values("period")
-    agg_df["cum_num_txs"] = agg_df["num_txs"].cumsum()
-    agg_df["cum_volume"] = agg_df["volume"].cumsum()
+    agg_df['cum_num_txs'] = agg_df['num_txs'].cumsum()
+    agg_df['cum_volume'] = agg_df['volume'].cumsum()
 
     # --- KPIs -----------------------------------------------------------------------------------------------------------
     card_style = """
@@ -283,16 +243,16 @@ with tabs[0]:
 
     # Number of Interchain Transfers Over Time
     fig1 = go.Figure()
-    fig1.add_trace(go.Bar(x=agg_df["period"], y=agg_df["num_txs"], name="Transfers", yaxis="y1", marker_color="#ff7f27"))
-    fig1.add_trace(go.Scatter(x=agg_df["period"], y=agg_df["cum_num_txs"], name="Total Transfers", yaxis="y2", mode="lines", line=dict(color="black")))
+    fig1.add_trace(go.Bar(x=agg_df['period'], y=agg_df['num_txs'], name="Transfers", yaxis="y1", marker_color="#ff7f27"))
+    fig1.add_trace(go.Scatter(x=agg_df['period'], y=agg_df['cum_num_txs'], name="Total Transfers", yaxis="y2", mode="lines", line=dict(color="black")))
     fig1.update_layout(title="Number of Interchain Transfers Over Time", yaxis=dict(title="Txns count"), yaxis2=dict(title="Txns count", overlaying="y", side="right"),
         xaxis_title="", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
     col1.plotly_chart(fig1, use_container_width=True)
 
     # Volume of Interchain Transfers Over Time
     fig2 = go.Figure()
-    fig2.add_trace(go.Bar(x=agg_df["period"], y=agg_df["volume"], name="Volume", yaxis="y1", marker_color="#ff7f27"))
-    fig2.add_trace(go.Scatter(x=agg_df["period"], y=agg_df["cum_volume"],name="Total Volume", yaxis="y2", mode="lines", line=dict(color="black")))
+    fig2.add_trace(go.Bar(x=agg_df['period'], y=agg_df['volume'], name="Volume", yaxis="y1", marker_color="#ff7f27"))
+    fig2.add_trace(go.Scatter(x=agg_df['period'], y=agg_df['cum_volume'],name="Total Volume", yaxis="y2", mode="lines", line=dict(color="black")))
     fig2.update_layout(title="Volume of Interchain Transfers Over Time", yaxis=dict(title="$USD"), yaxis2=dict(title="$USD", overlaying="y", side="right"), xaxis_title="",
         legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
     col2.plotly_chart(fig2, use_container_width=True)
@@ -300,7 +260,7 @@ with tabs[0]:
 
     @st.cache_data
     def load_interchain_users_data(timeframe, start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
@@ -336,7 +296,7 @@ with tabs[0]:
 
     @st.cache_data
     def load_interchain_fees_data(timeframe, start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
@@ -376,13 +336,13 @@ with tabs[0]:
 
     @st.cache_data
     def load_interchain_fees_stats(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
         query = f"""
         WITH axelar_service AS (
-  
+
       SELECT  
         created_at, COALESCE(CASE 
             WHEN IS_ARRAY(data:gas:gas_used_amount) OR IS_OBJECT(data:gas:gas_used_amount) 
@@ -424,16 +384,16 @@ with tabs[0]:
     with col1:
         fig_b1 = go.Figure()
         # Stacked Bars
-        fig_b1.add_trace(go.Bar(x=df_interchain_users_data["Date"], y=df_interchain_users_data["New Users"], name="New Users", marker_color="#0ed145"))
-        fig_b1.add_trace(go.Bar(x=df_interchain_users_data["Date"], y=df_interchain_users_data["Returning Users"], name="Returning Users", marker_color="#ff7f27"))
-        fig_b1.add_trace(go.Scatter(x=df_interchain_users_data["Date"], y=df_interchain_users_data["Total Users"], name="Total Users", mode="lines", line=dict(color="black", width=2)))
+        fig_b1.add_trace(go.Bar(x=df_interchain_users_data['Date'], y=df_interchain_users_data['New Users'], name="New Users", marker_color="#0ed145"))
+        fig_b1.add_trace(go.Bar(x=df_interchain_users_data['Date'], y=df_interchain_users_data['Returning Users'], name="Returning Users", marker_color="#ff7f27"))
+        fig_b1.add_trace(go.Scatter(x=df_interchain_users_data['Date'], y=df_interchain_users_data['Total Users'], name="Total Users", mode="lines", line=dict(color="black", width=2)))
         fig_b1.update_layout(barmode="stack", title="Number of Users Over Time", yaxis=dict(title="Wallet count"),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5))
         st.plotly_chart(fig_b1, use_container_width=True)
 
     with col2:
-        fig2 = px.area(df_interchain_users_data, x="Date", y="User Growth", title="Interchain Users Growth Over Time", color_discrete_sequence=["#ff7f27"])
-        fig2.add_trace(go.Scatter(x=df_interchain_users_data["Date"], y=df_interchain_users_data["%Growth Rate"], name="%Growth Rate", mode="lines", yaxis="y2", line=dict(color="black")))
+        fig2 = px.area(df_interchain_users_data, x="Date", y="User Growth", title="Interchain Users Growth Over Time", color_discrete_sequence=['#ff7f27'])
+        fig2.add_trace(go.Scatter(x=df_interchain_users_data['Date'], y=df_interchain_users_data['%Growth Rate'], name="%Growth Rate", mode="lines", yaxis="y2", line=dict(color="black")))
         fig2.update_layout(xaxis_title="", yaxis_title="wallet count",  yaxis2=dict(title="%", overlaying="y", side="right"), template="plotly_white")
         st.plotly_chart(fig2, use_container_width=True)
 
@@ -457,14 +417,14 @@ with tabs[0]:
 
     with col4:
         st.markdown(card_style.format(label="Median Gas Fee", value=f"${df_interchain_fees_stats['Median Gas Fee'][0]:,}"), unsafe_allow_html=True)
-    
+
 
     col5, col6 = st.columns(2)
 
     with col5:
         fig5 = go.Figure()
-        fig5.add_bar(x=df_interchain_fees_data["Date"], y=df_interchain_fees_data["Transfer Fees"], name="Fee", yaxis="y1", marker_color="#ff7f27")
-        fig5.add_trace(go.Scatter(x=df_interchain_fees_data["Date"], y=df_interchain_fees_data["Total Transfer Fees"], name="Total Fees", mode="lines", 
+        fig5.add_bar(x=df_interchain_fees_data['Date'], y=df_interchain_fees_data['Transfer Fees'], name="Fee", yaxis="y1", marker_color="#ff7f27")
+        fig5.add_trace(go.Scatter(x=df_interchain_fees_data['Date'], y=df_interchain_fees_data['Total Transfer Fees'], name="Total Fees", mode="lines", 
                                   yaxis="y2", line=dict(color="black")))
         fig5.update_layout(title="Interchain Transfer Fees Over Time", yaxis=dict(title="$USD"), yaxis2=dict(title="$USD", overlaying="y", side="right"), xaxis=dict(title=""),
             barmode="group", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
@@ -472,9 +432,9 @@ with tabs[0]:
 
     with col6:
         fig6 = go.Figure()
-        fig6.add_trace(go.Scatter(x=df_interchain_fees_data["Date"], y=df_interchain_fees_data["Average Gas Fee"], name="Avg Gas Fee", mode="lines", 
+        fig6.add_trace(go.Scatter(x=df_interchain_fees_data['Date'], y=df_interchain_fees_data['Average Gas Fee'], name="Avg Gas Fee", mode="lines", 
                                   yaxis="y1", line=dict(color="blue")))
-        fig6.add_trace(go.Scatter(x=df_interchain_fees_data["Date"], y=df_interchain_fees_data["Median Gas Fee"], name="Median Gas Fee", mode="lines", 
+        fig6.add_trace(go.Scatter(x=df_interchain_fees_data['Date'], y=df_interchain_fees_data['Median Gas Fee'], name="Median Gas Fee", mode="lines", 
                                   yaxis="y2", line=dict(color="green")))
         fig6.update_layout(title="Average & Median Transfer Fees Over Time", yaxis=dict(title="$USD"), yaxis2=dict(title="$USD", overlaying="y", side="right"), xaxis=dict(title=""),
             barmode="group", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
@@ -504,18 +464,18 @@ with tabs[0]:
         for url in api_urls:
             resp = requests.get(url)
             if resp.status_code == 200:
-                data = resp.json()["source_chains"]
+                data = resp.json()['source_chains']
                 for s in data:
                     # source chain aggregation
                     all_sources.append({
-                        "source_chain": s["key"],
+                        "source_chain": s['key'],
                         "num_txs": s.get("num_txs", 0),
                         "volume": s.get("volume", 0.0)
                     })
                     # destination chain aggregation
-                    for d in s["destination_chains"]:
+                    for d in s['destination_chains']:
                         all_destinations.append({
-                            "destination_chain": d["key"],
+                            "destination_chain": d['key'],
                             "num_txs": d.get("num_txs", 0),
                             "volume": d.get("volume", 0.0)
                         })
@@ -531,17 +491,17 @@ with tabs[0]:
         df_paths = pd.DataFrame(all_paths).groupby("path", as_index=False).sum()
 
         return df_sources, df_destinations, df_paths
-    
+
     # ------- Source Chains: Snowflake ------------------------------------
     @st.cache_data
     def load_source_chains_stats(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
         query = f"""
         WITH axelar_service AS (
-  
+
       SELECT  
         created_at,
         LOWER(data:call.chain::STRING) AS source_chain,
@@ -602,13 +562,13 @@ with tabs[0]:
     # ------- Top 5: Source Chains: Snowflake ------------------------------------
     @st.cache_data
     def load_Top_source_chains_stats(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
         query = f"""
         WITH axelar_service AS (
-  
+
       SELECT  
         created_at,
         LOWER(data:call.chain::STRING) AS source_chain,
@@ -681,7 +641,7 @@ with tabs[0]:
         df_display1 = df_sources[["source_chain", "num_txs"]].copy()
         df_display1 = df_display1.sort_values("num_txs", ascending=False).reset_index(drop=True)
         df_display1.index = df_display1.index + 1  
-        df_display1["num_txs"] = df_display1["num_txs"].apply(lambda x: f"{x:,}")  
+        df_display1['num_txs'] = df_display1['num_txs'].apply(lambda x: f"{x:,}")  
         df_display1 = df_display1.rename(columns={
             "source_chain": "Source Chain",
             "num_txs": "Number of Transfers"
@@ -694,7 +654,7 @@ with tabs[0]:
         df_display2 = df_sources[["source_chain", "volume"]].copy()
         df_display2 = df_display2.sort_values("volume", ascending=False).reset_index(drop=True)
         df_display2.index = df_display2.index + 1  
-        df_display2["volume"] = df_display2["volume"].apply(lambda x: f"{x:,.2f}") 
+        df_display2['volume'] = df_display2['volume'].apply(lambda x: f"{x:,.2f}") 
         df_display2 = df_display2.rename(columns={
             "source_chains": "Source Chains",
             "volume": "Volume of Transfers ($USD)"
@@ -717,7 +677,7 @@ with tabs[0]:
         st.plotly_chart(fig, use_container_width=True)
     with col2:
         top5 = df_sources.sort_values("volume", ascending=False).head(5).copy()
-        top5["volume"] = top5["volume"].round(0)
+        top5['volume'] = top5['volume'].round(0)
         fig = px.bar(top5, x="source_chain", y="volume", title="Top 5 Source Chains by Volume", text="volume", labels={"source_chain": "", "volume": "$USD"})
         st.plotly_chart(fig, use_container_width=True)
     with col3:
@@ -728,13 +688,13 @@ with tabs[0]:
     # ------- Destination Chains: Snowflake ------------------------------------
     @st.cache_data
     def load_destination_chains_stats(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
         query = f"""
         WITH axelar_service AS (
-  
+
       SELECT  
         created_at,
         LOWER(data:call.chain::STRING) AS source_chain,
@@ -795,13 +755,13 @@ with tabs[0]:
     # ------- Top 5: Destination Chains: Snowflake ------------------------------------
     @st.cache_data
     def load_top_destination_chains_stats(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
         query = f"""
         WITH axelar_service AS (
-  
+
       SELECT  
         created_at,
         LOWER(data:call.chain::STRING) AS source_chain,
@@ -872,7 +832,7 @@ with tabs[0]:
         df_display1 = df_destinations[["destination_chain", "num_txs"]].copy()
         df_display1 = df_display1.sort_values("num_txs", ascending=False).reset_index(drop=True)
         df_display1.index = df_display1.index + 1  
-        df_display1["num_txs"] = df_display1["num_txs"].apply(lambda x: f"{x:,}")  
+        df_display1['num_txs'] = df_display1['num_txs'].apply(lambda x: f"{x:,}")  
         df_display1 = df_display1.rename(columns={
             "destination_chain": "Destination Chain",
             "num_txs": "Number of Transfers"
@@ -885,7 +845,7 @@ with tabs[0]:
         df_display2 = df_destinations[["destination_chain", "volume"]].copy()
         df_display2 = df_display2.sort_values("volume", ascending=False).reset_index(drop=True)
         df_display2.index = df_display2.index + 1  
-        df_display2["volume"] = df_display2["volume"].apply(lambda x: f"{x:,.2f}") 
+        df_display2['volume'] = df_display2['volume'].apply(lambda x: f"{x:,.2f}") 
         df_display2 = df_display2.rename(columns={
             "destination_chain": "Destination Chain",
             "volume": "Volume of Transfers ($USD)"
@@ -908,7 +868,7 @@ with tabs[0]:
         st.plotly_chart(fig, use_container_width=True)
     with col2:
         top5 = df_destinations.sort_values("volume", ascending=False).head(5).copy()
-        top5["volume"] = top5["volume"].round(0)
+        top5['volume'] = top5['volume'].round(0)
         fig = px.bar(top5, x="destination_chain", y="volume", title="Top 5 Destination Chains by Volume", text="volume", labels={"destination_chain": "", "volume": "$USD"})
         st.plotly_chart(fig, use_container_width=True)
     with col3:
@@ -919,13 +879,13 @@ with tabs[0]:
     # ------- Path: Snowflake --------------------------------------------------------------------------------------------------------
     @st.cache_data
     def load_paths_stats(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
         query = f"""
         WITH axelar_service AS (
-  
+
       SELECT  
         created_at,
         LOWER(data:call.chain::STRING) AS source_chain,
@@ -986,13 +946,13 @@ with tabs[0]:
     # ------- Top 5: Paths: Snowflake ------------------------------------
     @st.cache_data
     def load_top_paths_stats(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
         query = f"""
         WITH axelar_service AS (
-  
+
       SELECT  
         created_at,
         LOWER(data:call.chain::STRING) AS source_chain,
@@ -1063,7 +1023,7 @@ with tabs[0]:
         df_display1 = df_paths[["path", "num_txs"]].copy()
         df_display1 = df_display1.sort_values("num_txs", ascending=False).reset_index(drop=True)
         df_display1.index = df_display1.index + 1  
-        df_display1["num_txs"] = df_display1["num_txs"].apply(lambda x: f"{x:,}")  
+        df_display1['num_txs'] = df_display1['num_txs'].apply(lambda x: f"{x:,}")  
         df_display1 = df_display1.rename(columns={
             "path": "Path",
             "num_txs": "Number of Transfers"
@@ -1076,7 +1036,7 @@ with tabs[0]:
         df_display2 = df_paths[["path", "volume"]].copy()
         df_display2 = df_display2.sort_values("volume", ascending=False).reset_index(drop=True)
         df_display2.index = df_display2.index + 1  
-        df_display2["volume"] = df_display2["volume"].apply(lambda x: f"{x:,.2f}") 
+        df_display2['volume'] = df_display2['volume'].apply(lambda x: f"{x:,.2f}") 
         df_display2 = df_display2.rename(columns={
             "path": "Path",
             "volume": "Volume of Transfers ($USD)"
@@ -1099,7 +1059,7 @@ with tabs[0]:
         st.plotly_chart(fig, use_container_width=True)
     with col2:
         top5 = df_paths.sort_values("volume", ascending=False).head(5).copy()
-        top5["volume"] = top5["volume"].round(0)
+        top5['volume'] = top5['volume'].round(0)
         fig = px.bar(top5, x="path", y="volume", title="Top 5 Paths by Volume", text="volume", labels={"path": "", "volume": "$USD"})
         st.plotly_chart(fig, use_container_width=True)
     with col3:
@@ -1110,8 +1070,7 @@ with tabs[1]:
     # === ITS Tokens ===
 
     # --- Page Config ------------------------------------------------------------------------------------------------------
-    ",
-        page_icon="https://pbs.twimg.com/profile_images/1869486848646537216/rs71wCQo_400x400.jpg", layout="wide")
+
 
     # --- Title -----------------------------------------------------------------------------------------------------
     st.title("✨ITS Tokens")
@@ -1119,6 +1078,8 @@ with tabs[1]:
     st.info("📊Charts initially display data for a default time range. Select a custom range to view results for your desired period.")
 
     # --- Sidebar Footer Slightly Left-Aligned ---
+
+
     # --- Convert date to unix (sec) ----------------------------------------------------------------------------------
     def to_unix_timestamp(dt):
         return int(time.mktime(dt.timetuple()))
@@ -1154,17 +1115,19 @@ with tabs[1]:
         if df.empty:
             return pd.DataFrame(columns=["Token Address", "Symbol", "Logo", "Number of Transfers", "Volume of Transfers"]), {}
 
-        df["Token Address"] = df["key"]
-        df["Symbol"] = df["key"].str.lower().map(address_to_symbol).fillna("Unknown")
-        df["Logo"] = df["Symbol"].map(symbol_to_image).fillna("")
-        df["Number of Transfers"] = df["num_txs"].astype(int)
-        df["Volume of Transfers"] = df["volume"].astype(float)
+        df['Token Address'] = df['key']
+        df['Symbol'] = df['key'].str.lower().map(address_to_symbol).fillna("Unknown")
+        df['Logo'] = df['Symbol'].map(symbol_to_image).fillna("")
+        df['Number of Transfers'] = df['num_txs'].astype(int)
+        df['Volume of Transfers'] = df['volume'].astype(float)
 
         df = df[["Token Address", "Symbol", "Logo", "Number of Transfers", "Volume of Transfers"]]
 
         return df, symbol_to_image
 
     # --- Main Run ------------------------------------------------------------------------------------------------------
+
+
     col1, col2 = st.columns(2)
     with col1:
         start_date = st.date_input("Start Date", value=pd.to_datetime("2023-12-01"))
@@ -1178,15 +1141,15 @@ with tabs[1]:
     else:
 
         df_display = df.copy()
-        df_display["Number of Transfers"] = df_display["Number of Transfers"].map("{:,}".format)
-        df_display["Volume of Transfers"] = df_display["Volume of Transfers"].map("{:,.0f}".format)
+        df_display['Number of Transfers'] = df_display['Number of Transfers'].map("{:,}".format)
+        df_display['Volume of Transfers'] = df_display['Volume of Transfers'].map("{:,.0f}".format)
 
         def logo_html(url):
             if url:
                 return f'<img src="{url}" style="width:20px;height:20px;border-radius:50%;">'
             return ""
 
-        df_display["Logo"] = df_display["Logo"].apply(logo_html)
+        df_display['Logo'] = df_display['Logo'].apply(logo_html)
 
         st.subheader("📑 Interchain Token Transfers Table")
 
@@ -1200,7 +1163,7 @@ with tabs[1]:
 
         # --- chart 1: Top 10 by Volume (without Unknown) -------------------------------------------------------------------
         df_grouped = (
-            df[df["Symbol"] != "Unknown"]
+            df[df['Symbol'] != "Unknown"]
             .groupby("Symbol", as_index=False)
             .agg({
                 "Number of Transfers": "sum",
@@ -1225,7 +1188,7 @@ with tabs[1]:
         )
 
         # --- chart2: Top 10 by Transfers Count (without Unknown + volume > 0) ------------------------------------------------
-        df_nonzero = df_grouped[df_grouped["Volume of Transfers"] > 0]
+        df_nonzero = df_grouped[df_grouped['Volume of Transfers'] > 0]
         top_transfers = df_nonzero.sort_values("Number of Transfers", ascending=False).head(10)
 
         fig2 = px.bar(
@@ -1250,10 +1213,7 @@ with tabs[2]:
     # === ITS Token Deployment ===
 
     # --- Page Config ------------------------------------------------------------------------------------------------------
-    ",
-        page_icon="https://pbs.twimg.com/profile_images/1869486848646537216/rs71wCQo_400x400.jpg",
-        layout="wide"
-    )
+
 
     # --- Title -----------------------------------------------------------------------------------------------------
     st.title("📑Token Deployments")
@@ -1262,11 +1222,13 @@ with tabs[2]:
     st.info("⏳On-chain data retrieval may take a few moments. Please wait while the results load.")
 
     # --- Sidebar Footer Slightly Left-Aligned ---
+
+
     # --- Snowflake Connection ----------------------------------------------------------------------------------------
-    snowflake_secrets = st.secrets["snowflake"]
-    user = snowflake_secrets["user"]
-    account = snowflake_secrets["account"]
-    private_key_str = snowflake_secrets["private_key"]
+    snowflake_secrets = st.secrets['snowflake']
+    user = snowflake_secrets['user']
+    account = snowflake_secrets['account']
+    private_key_str = snowflake_secrets['private_key']
     warehouse = snowflake_secrets.get("warehouse", "")
     database = snowflake_secrets.get("database", "")
     schema = snowflake_secrets.get("schema", "")
@@ -1308,7 +1270,7 @@ with tabs[2]:
     # --- Row 1 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     @st.cache_data
     def load_deploy_stats(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
@@ -1364,16 +1326,16 @@ with tabs[2]:
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown(card_style.format(label="Number of Deployed Tokens", value=f"✨{df_deploy_stats["Total Number of Deployed Tokens"][0]:,}"), unsafe_allow_html=True)
+        st.markdown(card_style.format(label="Number of Deployed Tokens", value=f"✨{df_deploy_stats['Total Number of Deployed Tokens'][0]:,}"), unsafe_allow_html=True)
     with col2:
-        st.markdown(card_style.format(label="Number of Token Deployers", value=f"👨‍💻{df_deploy_stats["Total Number of Token Deployers"][0]:,}"), unsafe_allow_html=True)
+        st.markdown(card_style.format(label="Number of Token Deployers", value=f"👨‍💻{df_deploy_stats['Total Number of Token Deployers'][0]:,}"), unsafe_allow_html=True)
     with col3:
-        st.markdown(card_style.format(label="Total Gas Fees", value=f"⛽${df_deploy_stats["Total Gas Fees"][0]:,}"), unsafe_allow_html=True)
+        st.markdown(card_style.format(label="Total Gas Fees", value=f"⛽${df_deploy_stats['Total Gas Fees'][0]:,}"), unsafe_allow_html=True)
 
     # --- Row 2: Number of Deployer --------------------------------------------------------------------------------------------------------------------------------------------
     @st.cache_data
     def load_deployers_overtime(timeframe, start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
@@ -1414,7 +1376,7 @@ with tabs[2]:
     # --- Row 2: Number of Tokens Deployed ----------------------------------------------------------------------------------------------------------------------------------------------
     @st.cache_data
     def load_deployed_tokens(timeframe, start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
@@ -1451,9 +1413,9 @@ with tabs[2]:
     with col1:
         fig_b1 = go.Figure()
         # Stacked Bars
-        fig_b1.add_trace(go.Bar(x=df_deployers_overtime["Date"], y=df_deployers_overtime["New Deployers"], name="New Deployers", marker_color="#fc9047"))
-        fig_b1.add_trace(go.Bar(x=df_deployers_overtime["Date"], y=df_deployers_overtime["Returning Deployers"], name="Returning Deployers", marker_color="#858dff"))
-        fig_b1.add_trace(go.Scatter(x=df_deployers_overtime["Date"], y=df_deployers_overtime["Total Deployers"], name="Total Deployers", mode="lines", line=dict(color="black", width=2)))
+        fig_b1.add_trace(go.Bar(x=df_deployers_overtime['Date'], y=df_deployers_overtime['New Deployers'], name="New Deployers", marker_color="#fc9047"))
+        fig_b1.add_trace(go.Bar(x=df_deployers_overtime['Date'], y=df_deployers_overtime['Returning Deployers'], name="Returning Deployers", marker_color="#858dff"))
+        fig_b1.add_trace(go.Scatter(x=df_deployers_overtime['Date'], y=df_deployers_overtime['Total Deployers'], name="Total Deployers", mode="lines", line=dict(color="black", width=2)))
         fig_b1.update_layout(barmode="stack", title="Number of Token Deployers Over Time", yaxis=dict(title="Address count"),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5))
         st.plotly_chart(fig_b1, use_container_width=True)
@@ -1466,7 +1428,7 @@ with tabs[2]:
     # --- Row 3,4 -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     @st.cache_data
     def load_deploy_fee_stats_overtime(timeframe, start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
@@ -1508,7 +1470,7 @@ with tabs[2]:
     # --- Row 4 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
     @st.cache_data
     def load_gas_fee_stats(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
@@ -1542,11 +1504,11 @@ with tabs[2]:
 
         df = pd.read_sql(query, conn)
         return df
-    
+
     # --- Row 5 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
     @st.cache_data
     def load_avg_median_fee_stats(timeframe, start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
@@ -1626,11 +1588,11 @@ with tabs[2]:
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown(card_style.format(label="Avg Gas Fee", value=f"📊${df_gas_fee_stats["Avg Gas Fee"][0]:,}"), unsafe_allow_html=True)
+        st.markdown(card_style.format(label="Avg Gas Fee", value=f"📊${df_gas_fee_stats['Avg Gas Fee'][0]:,}"), unsafe_allow_html=True)
     with col2:
-        st.markdown(card_style.format(label="Median Gas Fee", value=f"📋${df_gas_fee_stats["Median Gas Fee"][0]:,}"), unsafe_allow_html=True)
+        st.markdown(card_style.format(label="Median Gas Fee", value=f"📋${df_gas_fee_stats['Median Gas Fee'][0]:,}"), unsafe_allow_html=True)
     with col3:
-        st.markdown(card_style.format(label="Max Gas Fee", value=f"📈${df_gas_fee_stats["Max Gas Fee"][0]:,}"), unsafe_allow_html=True)
+        st.markdown(card_style.format(label="Max Gas Fee", value=f"📈${df_gas_fee_stats['Max Gas Fee'][0]:,}"), unsafe_allow_html=True)
 
     # === Charts: Row 5 ======================================================
     col1, col2 = st.columns(2)
@@ -1642,9 +1604,9 @@ with tabs[2]:
 
     with col2:
         fig2 = go.Figure()
-        fig2.add_trace(go.Scatter(x=df_avg_median_fee_stats["Date"], y=df_avg_median_fee_stats["Avg Gas Fee"], name="Avg Gas Fee", mode="lines", 
+        fig2.add_trace(go.Scatter(x=df_avg_median_fee_stats['Date'], y=df_avg_median_fee_stats['Avg Gas Fee'], name="Avg Gas Fee", mode="lines", 
                                   yaxis="y1", line=dict(color="#fa9550")))
-        fig2.add_trace(go.Scatter(x=df_avg_median_fee_stats["Date"], y=df_avg_median_fee_stats["Median Gas Fee"], name="Median Gas Fee", mode="lines", 
+        fig2.add_trace(go.Scatter(x=df_avg_median_fee_stats['Date'], y=df_avg_median_fee_stats['Median Gas Fee'], name="Median Gas Fee", mode="lines", 
                                   yaxis="y2", line=dict(color="#858dff")))
         fig2.update_layout(title="Average & Median Fee For Token Deployment", yaxis=dict(title="$USD"), yaxis2=dict(title="$USD", overlaying="y", side="right"), xaxis=dict(title=""),
             barmode="group", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
@@ -1653,7 +1615,7 @@ with tabs[2]:
     # --- Row 6 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
     @st.cache_data
     def load_deploy_stats_by_chain(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
@@ -1709,7 +1671,7 @@ with tabs[2]:
     # --- Row 7 --------------------------------------------------------------------------------------------------------------------------------------------------------------------
     @st.cache_data
     def load_list_tokens(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
@@ -1758,7 +1720,7 @@ with tabs[2]:
     # --- Row 8 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
     @st.cache_data
     def load_tracking_tokens(start_date, end_date):
-    
+
         start_str = start_date.strftime("%Y-%m-%d")
         end_str = end_date.strftime("%Y-%m-%d")
 
@@ -1811,3 +1773,4 @@ with tabs[2]:
     df_display.index = df_display.index + 1
     df_display = df_display.applymap(lambda x: f"{x:,}" if isinstance(x, (int, float)) else x)
     st.dataframe(df_display, use_container_width=True)
+
