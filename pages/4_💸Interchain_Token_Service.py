@@ -10,7 +10,7 @@ from cryptography.hazmat.backends import default_backend
 import networkx as nx
 
 st.set_page_config(
-    page_title="Axelar Interchain Token Service (ITS)",
+    page_title="Axelar Master Dashboard",
     page_icon="https://pbs.twimg.com/profile_images/1869486848646537216/rs71wCQo_400x400.jpg",
     layout="wide"
 )
@@ -67,7 +67,7 @@ with tabs[0]:
 
 
     # --- Title -----------------------------------------------------------------------------------------------------
-    st.title("🚀Interchain Transfers")
+    st.title("💸Interchain Token Service (ITS)")
 
     st.info("📊Charts initially display data for a default time range. Select a custom range to view results for your desired period.")
     st.info("⏳On-chain data retrieval may take a few moments. Please wait while the results load.")
