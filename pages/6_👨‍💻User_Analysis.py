@@ -102,8 +102,102 @@ with col2:
     start_date = st.date_input("Start Date", value=pd.to_datetime("2022-01-01"))
 with col3:
     end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30"))
+# --- Row 1 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_user_stats(start_date, end_date):
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
 
+    query = f"""
+    WITH axelar_service AS (
   
+  SELECT 
+    created_at, 
+    LOWER(data:send:original_source_chain) AS source_chain, 
+    LOWER(data:send:original_destination_chain) AS destination_chain,
+    sender_address AS user, case 
+    WHEN IS_ARRAY(data:send:amount) OR IS_ARRAY(data:link:price) THEN NULL
+    WHEN IS_OBJECT(data:send:amount) OR IS_OBJECT(data:link:price) THEN NULL
+    WHEN TRY_TO_DOUBLE(data:send:amount::STRING) IS NOT NULL AND TRY_TO_DOUBLE(data:link:price::STRING) IS NOT NULL 
+    THEN TRY_TO_DOUBLE(data:send:amount::STRING) * TRY_TO_DOUBLE(data:link:price::STRING)
+    ELSE NULL END AS amount_usd, CASE 
+    WHEN IS_ARRAY(data:send:fee_value) THEN NULL
+    WHEN IS_OBJECT(data:send:fee_value) THEN NULL
+    WHEN TRY_TO_DOUBLE(data:send:fee_value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:fee_value::STRING)
+    ELSE NULL END AS fee, id
+    FROM axelar.axelscan.fact_transfers
+    WHERE status = 'executed' AND simplified_status = 'received' 
+    UNION ALL
+    SELECT created_at, LOWER(data:call.chain::STRING) AS source_chain, LOWER(data:call.returnValues.destinationChain::STRING) AS destination_chain,
+    data:call.transaction.from::STRING AS user, CASE 
+    WHEN IS_ARRAY(data:value) OR IS_OBJECT(data:value) THEN NULL
+    WHEN TRY_TO_DOUBLE(data:value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:value::STRING)
+    ELSE NULL
+    END AS amount_usd, COALESCE(CASE 
+    WHEN IS_ARRAY(data:gas:gas_used_amount) OR IS_OBJECT(data:gas:gas_used_amount) 
+    OR IS_ARRAY(data:gas_price_rate:source_token.token_price.usd) OR IS_OBJECT(data:gas_price_rate:source_token.token_price.usd) 
+    THEN NULL
+    WHEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) IS NOT NULL 
+    AND TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING) IS NOT NULL 
+    THEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) * TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING)
+    ELSE NULL END, CASE 
+    WHEN IS_ARRAY(data:fees:express_fee_usd) OR IS_OBJECT(data:fees:express_fee_usd) THEN NULL
+    WHEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING)
+    ELSE NULL END) AS fee, id
+    FROM axelar.axelscan.fact_gmp 
+    WHERE status = 'executed' AND simplified_status = 'received')
+    
+    SELECT count(distinct user) as "Number of Users", round(sum(amount_usd)/count(distinct user)) as "Avg Volume per User", 
+    round(count(distinct id)/count(distinct user)) as "Avg Txns per User"
+    FROM axelar_service
+    where created_at::date>='{start_str}' and created_at::date<='{end_str}' and
+    id not in ('6f01df90bcb4d456c28d85a1f754f1c9c37b922885ea61f915e013aa8a20a5c6_osmosis',
+    '0b2b03ecd8c48bb3342754a401240fe5e421a3d74a40def8c1b77758a1976f52_osmosis',
+    '21074a86b299d4eaff74645ab8edc22aa3639a36e82df8e7fddfb3c78e8c7250_osmosis',
+    'a08cb0274fedf0594f181e6223418f1e7354c5da5285f493eeec70e4379f01bc_kujira',
+    'ba0ef39d7fb9b5c7650f2ea982ffb9a1f91263ce899ba1e8b13c161d0bca5e3b_secret-snip',
+    'efc018a03cdcfdb25f90d68fc2b06bee6c50c93c4d47ea1343148ea2444652b8_evmos',
+    '8e0bc8b78fd2da8b1795752fa98a4775f5dc19dca319b59ebc8a0ac80f39cfe1_osmosis',
+    '8eb3363bcf6776bbab9e168662173d6b24aca66f673a7f70ebebacae2d94e575_osmosis',
+    '71208b721ada14e26e48386396db03c7099603f452129805fa06442fb712ce85_archway',
+    '41e73eb192d4f9c81248c779a990f19899ae25cd3baba24f447af225430eb73e_osmosis',
+    '12dcc41fddd2f62e24233a3cb871689ea9d9f0c83c5b3a5ad9b629455cc7ec89_osmosis',
+    '562afc565b8c2e87e4018ed96cef222f80b490734fc488fdc80891a7c6f22f55_osmosis',
+    '606769d9cd0da39bcc93beb414c6349e3d29d3efd623e0b0829f4805438a3433_crescent',
+    '928031faa78c67fb1962822b3105cd359edb936751dce09e2fd807995363d3bc_osmosis',
+    '274969809c986ecf98013cd24b56c071df3c68b36a1c243410e866bb5b1304be_kujira',
+    '0xfd829bdb624a29b11a54c561d7ce80403607a79a3b4f0c6847dd4f8426274d26-121526',
+    'b2eb91cd813b6d107b6e3d526296d464c4e810e3ae02e0d24a1d193deb600d4b_archway',
+    '14115388d61f886dc1abbc2ae4cf9f68271d29605137333f9687229af671e3fc_kujira')
+    """
+    df = pd.read_sql(query, conn)
+    return df
+
+# === Load Data =====================================
+df_user_stats = load_user_stats(start_date, end_date)
+# === KPIs: Row 1 ===================================
+card_style = """
+    <div style="
+        background-color: #f9f9f9;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+        ">
+        <h4 style="margin: 0; font-size: 20px; color: #555;">{label}</h4>
+        <p style="margin: 5px 0 0; font-size: 20px; font-weight: bold; color: #000;">{value}</p>
+    </div>
+"""
+
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.markdown(card_style.format(label="Unique Users", value=f"{df_user_stats["Number of Users"][0]:,} Wallets"), unsafe_allow_html=True)
+with col2:
+    st.markdown(card_style.format(label="Avg Volume per User", value=f"${df_user_stats["Avg Volume per User"][0]:,}"), unsafe_allow_html=True)
+with col3:
+    st.markdown(card_style.format(label="Avg Txns per User", value=f"{df_user_stats["Avg Txns per User"][0]:,} Txns"), unsafe_allow_html=True)
+
 # --- Row 2 -------------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
 def load_new_users_overtime(timeframe, start_date, end_date):
