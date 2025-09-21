@@ -274,3 +274,12 @@ with col2:
                       legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5))
     st.plotly_chart(fig2, use_container_width=True)
 
+st.markdown(
+    """
+    <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Distribution of Axelar Users</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.markdown("<br>", unsafe_allow_html=True)
