@@ -784,7 +784,7 @@ def load_user_day(start_date, end_date):
 # === Load Data: Row 5 =======================================
 df_user_day = load_user_day(start_date, end_date)
 # === Chart: Row 5 ===========================================
-fig_bulb = px.bar(df_user_day, x="Active Days", y="Number of Users", color="Active Days", title="Distribution of Users According to the Number of Unique Days They Were Active")
+fig_bulb = px.bar(df_user_day, x="Active Days", y="Number of Users", color="Active Days", title="Distribution of Users According to the Number of Days They Were Active")
 fig_bulb.update_layout(yaxis=dict(title="Number of Users", type="log"), xaxis=dict(title="Number of Days of Activity"))
 st.plotly_chart(fig_bulb, use_container_width=True)
 
@@ -866,7 +866,9 @@ def load_user_week(start_date, end_date):
 # === Load Data: Row 6 =======================================
 df_user_week = load_user_week(start_date, end_date)
 # === Chart: Row 6 ===========================================
-
+fig_bulb = px.bar(df_user_week, x="Active Weeks", y="Number of Users", color="Active Weeks", title="Distribution of Users According to the Number of Weeks They Were Active")
+fig_bulb.update_layout(yaxis=dict(title="Number of Users", type="log"), xaxis=dict(title="Number of Weeks of Activity"))
+st.plotly_chart(fig_bulb, use_container_width=True)
 # --- Row 7 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
 def load_user_month(start_date, end_date):
@@ -945,3 +947,6 @@ def load_user_month(start_date, end_date):
 # === Load Data: Row 7 =======================================
 df_user_month = load_user_month(start_date, end_date)
 # === Chart: Row 7 ===========================================
+fig_bulb = px.bar(df_user_month, x="Active Months", y="Number of Users", color="Active Months", title="Distribution of Users According to the Number of Months They Were Active")
+fig_bulb.update_layout(yaxis=dict(title="Number of Users", type="log"), xaxis=dict(title="Number of Months of Activity"))
+st.plotly_chart(fig_bulb, use_container_width=True)
