@@ -168,7 +168,7 @@ grouped = (
 # Charts (Plotly)
 # ===================
 st.subheader("Number of Transfers by Token Over Time")
-fig = px.bar(grouped, x="timestamp", y="num_txs", color="token", barmode="stack")
+fig = px.bar(grouped, x="timestamp", y="num_txs", color="token", barmode="stack", labels={ "timestamp": "", "num_txs": "Txns count"})
 st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("Volume of Transfers by Token Over Time")
