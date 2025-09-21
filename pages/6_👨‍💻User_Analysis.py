@@ -288,12 +288,12 @@ st.markdown("<br>", unsafe_allow_html=True)
 st.markdown(
     """
     <div style="background-color: #a3fcbc; padding: 15px; border-radius: 10px; border: 1px solid #a3fcbc;">
-        Distribution of Users by Transfer Volume: Categorizes users based on their total transfer volume.
-        Distribution of Transfers by Transaction Size: Categorizes transactions based on their individual transfer size.
-        Distribution of Users by Number of Transfers: Groups users according to the total number of transfers they have conducted.
-        User Activity by Number of Cross-Chain Routes: Classifies users based on the number of cross-chain routes they utilize for transferring assets.
-        Distribution of Users by Unique Active Days: Measures user activity by the number of unique days they engaged with Axelar interchain services. 
-        Similar metrics were also calculated for weekly and monthly activity.
+        <strong>Distribution of Users by Transfer Volume:</strong> Categorizes users based on their <strong>total transfer volume</strong>.<br><br>
+        <strong>Distribution of Transfers by Transaction Size:</strong> Categorizes transactions based on their <strong>individual transfer size</strong>.<br><br>
+        <strong>Distribution of Users by Number of Transfers:</strong> Groups users according to the <strong>total number of transfers</strong> they have conducted.<br><br>
+        <strong>User Activity by Number of Cross-Chain Routes:</strong> Classifies users based on the <strong>number of cross-chain routes</strong> they utilize for transferring assets.<br><br>
+        <strong>Distribution of Users by Unique Active Days:</strong> Measures user activity by the <strong>number of unique days</strong> they engaged with Axelar interchain services.<br><br>
+        Similar metrics were also calculated for <strong>weekly</strong> and <strong>monthly activity</strong>.
     </div>
     """,
     unsafe_allow_html=True
