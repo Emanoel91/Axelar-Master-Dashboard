@@ -352,6 +352,7 @@ def load_distribution_txn_size(start_date, end_date):
     when amount_usd>1000 and amount_usd<=10000 then '1k<V<=10k$'
     when amount_usd>10000 and amount_usd<=100000 then '10k<V<=100k$'
     when amount_usd>100000 then 'V>100k$'
+    else 'No Volume'
     end as "Class"
     FROM axelar_service
     where created_at::date>='{start_str}' and created_at::date<='{end_str}' and
@@ -434,9 +435,10 @@ def load_distribution_user_size(start_date, end_date):
     when sum(amount_usd)>10000 and sum(amount_usd)<=100000 then '10k<V<=100k$'
     when sum(amount_usd)>100000 and sum(amount_usd)<=1000000 then '100k<V<=1m$'
     when sum(amount_usd)>1000000 then 'V>1m$'
+    else 'No Volume'
     end as "Class"
     FROM axelar_service
-    where created_at::date>='{start_str}' and created_at::date<='{end_str}' and
+    where created_at::date>='{start_str}' and created_at::date<='{end_str}' and 
     id not in ('6f01df90bcb4d456c28d85a1f754f1c9c37b922885ea61f915e013aa8a20a5c6_osmosis',
     '0b2b03ecd8c48bb3342754a401240fe5e421a3d74a40def8c1b77758a1976f52_osmosis',
     '21074a86b299d4eaff74645ab8edc22aa3639a36e82df8e7fddfb3c78e8c7250_osmosis',
