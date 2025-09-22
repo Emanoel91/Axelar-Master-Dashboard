@@ -5,7 +5,7 @@ import streamlit as st
 
 # --- Page Config: Tab Title & Icon ---
 st.set_page_config(
-    page_title="Axelar TVL Monitoring: ITS vs. Non-ITS",
+    page_title="Axelar Master Dashboard",
     page_icon="https://axelarscan.io/logos/logo.png",
     layout="wide"
 )
