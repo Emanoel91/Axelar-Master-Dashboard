@@ -1053,7 +1053,7 @@ def load_tt_user_retention():
     date_trunc('month', created_at) as activity_date,
     datediff('month', signup_date, activity_date) as difference
  from axelar.axelscan.fact_transfers
-  WHERE status = 'executed' AND simplified_status = 'received' and link is not null and SEND_AMOUNT_RECEIVED is not null and send_fee is not null and destination_chain is not null),
+  WHERE status = 'executed' AND simplified_status = 'received'),
 unp as (
   select TO_VARCHAR(signup_date, 'yyyy-MM') as cohort_date, difference as months, count (distinct TX_SIGNER) as users
   from base
