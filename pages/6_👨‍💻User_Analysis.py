@@ -961,3 +961,41 @@ st.markdown(
     unsafe_allow_html=True
 )
 st.markdown("<br>", unsafe_allow_html=True)
+
+@st.cache_data
+def load_its_user_retention():
+
+    query = f"""
+    with base as (SELECT  
+    data:call.transaction.from::STRING AS tx_signer,
+    min(date_trunc('month', created_at)) over (partition by tx_signer) as signup_date,
+    date_trunc('month', created_at) as activity_date,
+    datediff('month', signup_date, activity_date) as difference
+  FROM axelar.axelscan.fact_gmp 
+  WHERE status = 'executed'
+    AND simplified_status = 'received'
+    AND (data:approved:returnValues:contractAddress ilike '%0xB5FB4BE02232B1bBA4dC8f81dc24C26980dE9e3C%'
+        or data:approved:returnValues:contractAddress ilike '%axelar1aqcj54lzz0rk22gvqgcn8fr5tx4rzwdv5wv5j9dmnacgefvd7wzsy2j2mr%')),
+unp as (
+  select TO_VARCHAR(signup_date, 'yyyy-MM') as cohort_date, difference as months, count (distinct TX_SIGNER) as users
+  from base
+  where datediff('month', signup_date, current_date()) <= 12
+  group by 1,2
+  order by 1),
+fine as (select u.*, p.USERS as user0
+  from unp u left join unp p on u.COHORT_DATE = p.COHORT_DATE
+  where p.MONTHS = 0)
+select COHORT_DATE as "Cohort Date", MONTHS as "Month",round(100 * users / user0 , 2 ) as "Retention Rate"
+from fine
+having RETENTION_RATE <> 100 
+order by 1 desc, 2  
+
+    """
+    df = pd.read_sql(query, conn)
+    return df
+# === Load Data: Row 8 ====================================
+df_its_user_retention = load_its_user_retention()
+# === Chart: Heatmap (Row 8) ==============================
+pivot_its_users = df_its_user_retention.pivot_table(index="Cohort Date", columns="Month", values="Retention Rate", aggfunc="sum", fill_value=0)
+fig_heatmap_its_users = px.imshow(pivot_its_users, text_auto=True, aspect="auto", color_continuous_scale='Viridis', title="ITS User Retention")
+st.plotly_chart(fig_heatmap_its_users, use_container_width=True)
