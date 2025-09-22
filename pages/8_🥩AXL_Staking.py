@@ -43,9 +43,23 @@ conn = snowflake.connector.connect(
 )
 
 # --- Date Inputs ---------------------------------------------------------------------------------------------------
-start_date = st.date_input("Start Date", value=pd.to_datetime("2022-08-01"))
-end_date = st.date_input("End Date", value=pd.to_datetime("2025-07-30"))
+col1, col2, col3 = st.columns(3)
+with col1:
+    timeframe = st.selectbox("Select Time Frame", ["month", "week", "day"])
+with col2:
+    start_date = st.date_input("Start Date", value=pd.to_datetime("2022-08-01"))
+with col3:
+    end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30"))
 
+st.markdown(
+    """
+    <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Share of Staked Tokens from Supply</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.markdown("<br>", unsafe_allow_html=True)
 # --- Query Functions -----------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
 def load_share_of_staked_tokens(start_date, end_date):
