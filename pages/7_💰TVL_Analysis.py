@@ -134,9 +134,9 @@ total_axelar_tvl = unique_assets["Total Asset Value (USD)"].sum()
 # --- KPI ---
 st.markdown(
     f"""
-    <div style="background-color:#d6cdcd; padding:20px; border-radius:15px; text-align:center;">
-        <h2 style="color:#e41818; font-size:22px; margin-bottom:5px;">Total Axelar TVL (Latest update)</h2>
-        <h1 style="color:white; font-size:48px; font-weight:bold;">${total_axelar_tvl:,.0f}</h1>
+    <div style="background-color:#d9f0fc; padding:20px; border-radius:15px; text-align:center;">
+        <h2 style="color:#fc9608; font-size:22px; margin-bottom:5px;">Total Axelar TVL (Latest update)</h2>
+        <h1 style="color:#006ac9; font-size:48px; font-weight:bold;">${total_axelar_tvl:,.0f}</h1>
     </div>
     """,
     unsafe_allow_html=True
