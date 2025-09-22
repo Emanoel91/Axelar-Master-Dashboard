@@ -950,3 +950,14 @@ df_user_month = load_user_month(start_date, end_date)
 fig_bulb = px.bar(df_user_month, x="Active Months", y="Number of Users", color="Active Months", title="Distribution of Users According to the Number of Months They Were Active")
 fig_bulb.update_layout(yaxis=dict(title="Number of Users", type="log"), xaxis=dict(title="Number of Months of Activity"))
 st.plotly_chart(fig_bulb, use_container_width=True)
+
+# --- Row 8 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+st.markdown(
+    """
+    <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
+        <h2 style="color:#000000; text-align:center;">Axelar User Retention</h2>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.markdown("<br>", unsafe_allow_html=True)
