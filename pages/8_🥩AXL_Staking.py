@@ -329,12 +329,7 @@ def load_validators_overtime(timeframe, start_date, end_date):
   group by
     2
 )
-select
-  trunc(date, '{timeframe}') as "Date",
-  count(DISTINCT VALIDATOR_ADDRESS) as "New Validators",
-  suM("New Validators") over (order by monthly asc
-  ) as "Cumulative New Validators",
-  75 as "Active Validators"
+select trunc(date, '{timeframe}') as "Date", count(DISTINCT VALIDATOR_ADDRESS) as "New Validators", 75 as "Active Validators"
 from validator
 where date::date>='{start_str}' and date::date<='{end_str}'
 group by
