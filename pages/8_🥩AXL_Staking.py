@@ -227,10 +227,70 @@ def load_net_staked_overtime(start_date, end_date, total_supply):
     df = pd.read_sql(query, conn)
     return df
 
-# --- Load Data: Row 5 ----------------------------------------------------------------------------------------
+# --- Load Data: Row 2 ----------------------------------------------------------------------------------------
 df_net_staked_overtime = load_net_staked_overtime(start_date, end_date, CURRENT_TOTAL_SUPPLY)
 
-# --- Charts 5 ------------------------------------------------------------------------------------------------
+# --- Charts 2 ------------------------------------------------------------------------------------------------
 fig = px.area(df_net_staked_overtime, x="Date", y="Net Staked", title="AXL Net Staked Amount Over Time")
 fig.update_layout(xaxis_title="", yaxis_title="$AXL", template="plotly_white")
 st.plotly_chart(fig, use_container_width=True)
+
+# --- Row 3 ---------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_staking_stats(start_date, end_date):
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    with table1 as (
+    select count(distinct tx_id) as "Staking Count",
+    count(distinct delegator_address) as "Unique Stakers",
+    round(avg(amount)/pow(10,6)) as "Average", 
+    round(median(amount)/pow(10,6)) as "Median", 
+    round(max(amount)/pow(10,6)) as "Maximum",
+    round((sum(amount)/pow(10,6))/count(distinct delegator_address)) as "Avg Staking Volume per User",
+    round(count(distinct tx_id)/count(distinct delegator_address)) as "Avg Staking Count per User"
+   from axelar.gov.fact_staking
+   where tx_succeeded='true' and currency='uaxl' and block_timestamp::date>='{start_str}' AND
+   block_timestamp::date<='{end_str}' and action='delegate'),
+   table2 as (with tab1 as (select delegator_address, round(sum(amount)/pow(10,6)) as tot_staking_vol
+   from axelar.gov.fact_staking
+   where tx_succeeded='true' and currency='uaxl' and block_timestamp::date>='{start_str}' AND
+   block_timestamp::date<='{end_str}' and action='delegate'
+   group by 1)
+   select round(median(tot_staking_vol)) as "Median Volume of Tokens Staked by Users",
+   round(max(tot_staking_vol)) as "Max Volume of Tokens Staked by User"
+   from tab1)
+   select * from table1 , table2
+    """
+
+    df = pd.read_sql(query, conn)
+    return df
+
+# --- Load Data: Row --------------------------------------
+df_staking_stats = load_staking_stats(start_date, end_date)
+# --- KPIs: Row 3 ---------------------------------------------------------------------------------------------------------------------------------------------------------
+card_style = """
+    <div style="
+        background-color: #f9f9f9;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+        ">
+        <h4 style="margin: 0; font-size: 20px; color: #555;">{label}</h4>
+        <p style="margin: 5px 0 0; font-size: 20px; font-weight: bold; color: #000;">{value}</p>
+    </div>
+"""
+
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.markdown(card_style.format(label="Staking Transactions", value=f"{df_staking_stats["Staking Count"][0]:,} Txns"), unsafe_allow_html=True)
+with col2:
+    st.markdown(card_style.format(label="Unique Stakers", value=f"{df_staking_stats["Unique Stakers"][0]:,} Wallets"), unsafe_allow_html=True)
+with col3:
+    st.markdown(card_style.format(label="Avg Staking Count per Wallet", value=f"{df_staking_stats["Avg Staking Count per User"][0]:,} Txns"), unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
