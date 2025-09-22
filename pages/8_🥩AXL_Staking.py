@@ -403,7 +403,7 @@ col1, col2 = st.columns(2)
 with col1:
     fig_b1 = go.Figure()
     # Stacked Bars
-    fig_b1.add_trace(go.Bar(x=df_stakers_overtime["Date"], y=df_stakers_overtime["New Stakers"], name="New Stakers", marker_color="#0ed145"))
+    fig_b1.add_trace(go.Bar(x=df_stakers_overtime["Date"], y=df_stakers_overtime["New Stakers"], name="New Stakers", marker_color="#62cbff"))
     fig_b1.add_trace(go.Bar(x=df_stakers_overtime["Date"], y=df_stakers_overtime["Returning Stakers"], name="Returning Stakers", marker_color="blue"))
     fig_b1.add_trace(go.Scatter(x=df_stakers_overtime["Date"], y=df_stakers_overtime["Total Stakers"], name="Total Stakers", mode="lines", line=dict(color="black", width=2)))
     fig_b1.update_layout(barmode="stack", title="Number of Stakers Over Time", yaxis=dict(title="Wallet count"),
