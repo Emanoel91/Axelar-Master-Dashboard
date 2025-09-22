@@ -48,7 +48,8 @@ def get_total_supply():
     url = "https://api.axelarscan.io/api/getTotalSupply"
     response = requests.get(url)
     response.raise_for_status()
-    return int(response.text.strip())
+    supply = float(response.text.strip())
+    return round(supply)  # رند کردن به عدد صحیح برای نمایش در KPI
 
 CURRENT_TOTAL_SUPPLY = get_total_supply()
 
@@ -155,7 +156,7 @@ with col1:
 with col2:
     st.markdown(card_style.format(label="%Staked-to-Total Supply", value=f"{df_current_net_staked['Net Staked %'][0]:,}%"), unsafe_allow_html=True)
 with col3:
-    st.markdown(card_style.format(label="Current Total Supply", value=f"{df_current_net_staked['Current Total Supply'][0]:,} $AXL"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="Current Total Supply", value=f"{round(df_current_net_staked['Current Total Supply'][0]):,} $AXL"), unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
