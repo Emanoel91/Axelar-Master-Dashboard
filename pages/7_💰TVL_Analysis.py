@@ -65,7 +65,7 @@ fig1.add_trace(
 
 st.plotly_chart(fig1, use_container_width=True)
 
-# --- Row 2: Normalized Area Chart --------------------------------
+# --- Row 2+ ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # --- Load API Data ---
 @st.cache_data(ttl=3600)
@@ -135,7 +135,7 @@ total_axelar_tvl = unique_assets["Total Asset Value (USD)"].sum()
 st.markdown(
     f"""
     <div style="background-color:#1E1E1E; padding:20px; border-radius:15px; text-align:center;">
-        <h2 style="color:#00FFAA; font-size:22px; margin-bottom:5px;">Total Axelar TVL</h2>
+        <h2 style="color:#e41818; font-size:22px; margin-bottom:5px;">Total Axelar TVL (Latest update)</h2>
         <h1 style="color:white; font-size:48px; font-weight:bold;">${total_axelar_tvl:,.0f}</h1>
     </div>
     """,
