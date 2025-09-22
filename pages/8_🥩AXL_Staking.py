@@ -165,14 +165,7 @@ def load_monthly_share_data(start_date, end_date):
 share_of_staked_tokens = load_share_of_staked_tokens(start_date, end_date)
 monthly_share_df = load_monthly_share_data(start_date, end_date)
 # --- Row 1: KPI ---------------------------------------------------------------------------------------------------------------------------------------------------------------
-st.markdown(
-    """
-    <div style="background-color:#fc0060; padding:1px; border-radius:10px;">
-        <h2 style="color:#000000; text-align:center;">Share of Staked Tokens from Supply</h2>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+
 if share_of_staked_tokens is not None:
     st.metric("Share of Staked Tokens From Supply", f"{share_of_staked_tokens:.2f}%")
 else:
