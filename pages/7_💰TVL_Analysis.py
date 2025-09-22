@@ -30,10 +30,7 @@ st.title("💰TVL Analysis")
 
 # --- Row 1: Stacked Bar Chart ------------------
 
-st.info(
-    "🔔The TVL data for the Axelar network is updated every 24 hours."
-
-)
+st.info("🔔To view the most recent updates, click on the '...' in the top-right corner of the page and select 'Rerun'.")
 
 # Plot order for columns (ITS is placed above non-ITS) --------------------------------
 category_order = {"asset_type": ["non-ITS", "ITS"]}
