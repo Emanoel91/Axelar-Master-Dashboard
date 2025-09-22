@@ -49,7 +49,7 @@ def get_total_supply():
     response = requests.get(url)
     response.raise_for_status()
     supply = float(response.text.strip())
-    return round(supply)  # رند کردن به عدد صحیح برای نمایش در KPI
+    return round(supply)  
 
 CURRENT_TOTAL_SUPPLY = get_total_supply()
 
@@ -282,3 +282,89 @@ with col3:
     st.markdown(card_style.format(label="Active Validators", value=f"{df_staking_stats["Active Validators"][0]:,}"), unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
+
+# --- Row 4 -------------------------------------------------------------------------------------------------------------
+
+@st.cache_data
+def load_staking_overtime(timeframe, start_date, end_date):
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    select date_trunc('{timeframe}',block_timestamp) as "Date", 
+    round(sum(amount)/pow(10,6)) as "Staking Volume", 
+    count(distinct tx_id) as "Staking Count",
+    sum("Staking Volume") over (order by "Date" asc) as "Total Staking Volume", 
+    sum("Staking Count") over (order by "Date" asc) as "Total Staking Count",
+    round(avg(amount)/pow(10,6)) as "Avg Volume per Txn", 
+    round((sum(amount)/pow(10,6))/count(distinct delegator_address)) as "Avg Volume per User"
+    from axelar.gov.fact_staking
+    where tx_succeeded='true' and currency='uaxl' and block_timestamp::date>='{start_str}' AND
+    block_timestamp::date<='{end_str}' and action='delegate'
+    group by 1
+    order by 1
+    """
+
+    df = pd.read_sql(query, conn)
+    return df
+
+@st.cache_data
+def load_validators_overtime(timeframe, start_date, end_date):
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    with validator as (
+  select
+    min(block_timestamp) as date,
+    VALIDATOR_ADDRESS,
+    sum(amount / pow(10, 6)) as delegate_amount,
+    count(DISTINCT tx_id) as delegate_tx,
+    count(DISTINCT DELEGATOR_ADDRESS) as delegate_user,
+    avg(amount / pow(10, 6)) as avg_delegate_amount
+  from
+    axelar.gov.fact_staking
+  group by
+    2
+)
+select
+  trunc(date, '{timeframe}') as "Date",
+  count(DISTINCT VALIDATOR_ADDRESS) as "New Validators",
+  suM("New Validators") over (order by monthly asc
+  ) as "Cumulative New Validators",
+  75 as "Active Validators"
+from validator
+where date::date>='{start_str}' and date::date<='{end_str}'
+group by
+  1
+    """
+
+    df = pd.read_sql(query, conn)
+    return df
+
+# --- Load Data: Row 4 ---------------------------------------------------------------------------------------------------
+df_staking_overtime = load_staking_overtime(timeframe, start_date, end_date)
+df_validators_overtime = load_validators_overtime(timeframe, start_date, end_date)
+# --- Charts: Row 4 ------------------------------------------------------------------------------------------------------
+col1, col2 = st.columns(2)
+
+with col1:
+    fig1 = go.Figure()
+    fig1.add_bar(x=df_staking_overtime["Date"], y=df_staking_overtime["Staking Count"], name="Staking Count", yaxis="y1", marker_color="blue")
+    fig1.add_trace(go.Scatter(x=df_staking_overtime["Date"], y=df_staking_overtime["Total Staking Count"], name="Total Staking Count", mode="lines", 
+                              yaxis="y2", line=dict(color="black")))
+    fig1.update_layout(title="AXL Staking Count Over Time", yaxis=dict(title="Txns count"), yaxis2=dict(title="Txns count", overlaying="y", side="right"), xaxis=dict(title=""),
+        barmode="group", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
+    st.plotly_chart(fig1, use_container_width=True)
+
+with col2:
+    fig2 = go.Figure()
+    fig2.add_bar(x=df_validators_overtime["Date"], y=df_validators_overtime["New Validators"], name="New Validators Count", yaxis="y1", marker_color="blue")
+    fig2.add_trace(go.Scatter(x=df_validators_overtime["Date"], y=df_validators_overtime["Active Validators"], name="Active Validators", mode="lines", 
+                              yaxis="y2", line=dict(color="black")))
+    fig2.update_layout(title="Number of Validators Over Time", yaxis=dict(title="validator count"), yaxis2=dict(title="validator count", 
+                       overlaying="y", side="right"), xaxis=dict(title=""),
+        barmode="group", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
+    st.plotly_chart(fig2, use_container_width=True)
