@@ -1000,5 +1000,5 @@ order by 1 desc, 2
 df_its_user_retention = load_its_user_retention()
 # === Chart: Heatmap (Row 8) ==============================
 pivot_its_users = df_its_user_retention.pivot_table(index="Cohort Date", columns="Month", values="Retention Rate", aggfunc="sum", fill_value=0)
-fig_heatmap_its_users = px.imshow(pivot_its_users, text_auto=True, aspect="auto", color_continuous_scale='green', title="ITS User Retention")
+fig_heatmap_its_users = px.imshow(pivot_its_users, text_auto=True, aspect="auto", color_continuous_scale='Viridis', title="ITS User Retention")
 st.plotly_chart(fig_heatmap_its_users, use_container_width=True)
