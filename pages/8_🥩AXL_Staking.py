@@ -246,23 +246,11 @@ def load_staking_stats(start_date, end_date):
     with table1 as (
     select count(distinct tx_id) as "Staking Count",
     count(distinct delegator_address) as "Unique Stakers",
-    round(avg(amount)/pow(10,6)) as "Average", 
-    round(median(amount)/pow(10,6)) as "Median", 
-    round(max(amount)/pow(10,6)) as "Maximum",
-    round((sum(amount)/pow(10,6))/count(distinct delegator_address)) as "Avg Staking Volume per User",
-    round(count(distinct tx_id)/count(distinct delegator_address)) as "Avg Staking Count per User"
+    75 as "Active Validators"
    from axelar.gov.fact_staking
    where tx_succeeded='true' and currency='uaxl' and block_timestamp::date>='{start_str}' AND
-   block_timestamp::date<='{end_str}' and action='delegate'),
-   table2 as (with tab1 as (select delegator_address, round(sum(amount)/pow(10,6)) as tot_staking_vol
-   from axelar.gov.fact_staking
-   where tx_succeeded='true' and currency='uaxl' and block_timestamp::date>='{start_str}' AND
-   block_timestamp::date<='{end_str}' and action='delegate'
-   group by 1)
-   select round(median(tot_staking_vol)) as "Median Volume of Tokens Staked by Users",
-   round(max(tot_staking_vol)) as "Max Volume of Tokens Staked by User"
-   from tab1)
-   select * from table1 , table2
+   block_timestamp::date<='{end_str}' and action='delegate')
+   select * from table1
     """
 
     df = pd.read_sql(query, conn)
@@ -291,6 +279,6 @@ with col1:
 with col2:
     st.markdown(card_style.format(label="Unique Stakers", value=f"{df_staking_stats["Unique Stakers"][0]:,} Wallets"), unsafe_allow_html=True)
 with col3:
-    st.markdown(card_style.format(label="Avg Staking Count per Wallet", value=f"{df_staking_stats["Avg Staking Count per User"][0]:,} Txns"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="Active Validators", value=f"{df_staking_stats["Active Validators"][0]:,}"), unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
