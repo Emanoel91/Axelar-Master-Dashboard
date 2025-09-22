@@ -47,149 +47,178 @@ col1, col2, col3 = st.columns(3)
 with col1:
     timeframe = st.selectbox("Select Time Frame", ["month", "week", "day"])
 with col2:
-    start_date = st.date_input("Start Date", value=pd.to_datetime("2022-08-01"))
+    start_date = st.date_input("Start Date", value=pd.to_datetime("2022-09-01"))
 with col3:
     end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30"))
 
 st.markdown(
     """
     <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
-        <h2 style="color:#000000; text-align:center;">Share of Staked Tokens from Supply</h2>
+        <h2 style="color:#000000; text-align:center;">AXL Stking Overview</h2>
     </div>
     """,
     unsafe_allow_html=True
 )
 st.markdown("<br>", unsafe_allow_html=True)
-# --- Query Functions -----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# --- Row 1 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
-def load_share_of_staked_tokens(start_date, end_date):
+def load_current_net_staked():
+
+    query = f"""
+    with date_start as (
+    with dates AS (
+    SELECT CAST('2022-02-10' AS DATE) AS start_date 
+    UNION ALL
+    SELECT DATEADD(day, 1, start_date)
+    FROM dates
+    WHERE start_date < CURRENT_DATE())
+    SELECT date_trunc(day, start_date) AS start_date
+    FROM dates),
+    axl_stakers_balance_change as (
+    select * from 
+        (select date_trunc(day, block_timestamp) as date, 
+        user, 
+        sum(amount)/1e6 as balance_change
+        from 
+            (
+            select block_timestamp, DELEGATOR_ADDRESS as user, -1* amount as amount, TX_ID as tx_hash
+            from axelar.gov.fact_staking
+            where action='undelegate' and TX_SUCCEEDED=TRUE
+            union all 
+            select block_timestamp, DELEGATOR_ADDRESS, amount, TX_ID
+            from axelar.gov.fact_staking
+            where action='delegate' and TX_SUCCEEDED=TRUE)
+        group by 1,2)),
+
+    axl_stakers_historic_holders as (
+    select user
+    from axl_stakers_balance_change
+    group by 1),
+
+    user_dates as (
+    select start_date, user
+    from date_start, axl_stakers_historic_holders),
+
+    users_balance as 
+    (select start_date as "Date", user,
+    lag(balance_raw) ignore nulls over (partition by user order by start_date) as balance_lag,
+    ifnull(balance_raw, balance_lag) as balance
+    from (
+        select start_date, a.user, balance_change,
+        sum(balance_change) over (partition by a.user order by start_date) as balance_raw,
+        from user_dates a 
+        left join axl_stakers_balance_change b 
+        on date=start_date and a.user=b.user))
+
+    select "Date", round(sum(balance)) as "Net Staked", 1215160193 as "Current Total Supply", round((100*"Net Staked"/"Current Total Supply"),2) as "Net Staked %"
+    from users_balance
+    where balance>=0.001 and balance is not null
+    group by 1 
+    order by 1 desc
+    limit 1
+    """
+
+    df = pd.read_sql(query, conn)
+    return df
+
+# --- Load Data: Row --------------------------------------------------------------------------------------------------------
+df_current_net_staked = load_current_net_staked()
+# --- KPIs: Row 1 ---------------------------------------------------------------------------------------------------
+card_style = """
+    <div style="
+        background-color: #f9f9f9;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+        ">
+        <h4 style="margin: 0; font-size: 20px; color: #555;">{label}</h4>
+        <p style="margin: 5px 0 0; font-size: 20px; font-weight: bold; color: #000;">{value}</p>
+    </div>
+"""
+
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.markdown(card_style.format(label="Current Net Staked", value=f"{df_current_net_staked["Net Staked"][0]:,} $AXL"), unsafe_allow_html=True)
+with col2:
+    st.markdown(card_style.format(label="%Staked-to-Total Supply", value=f"{df_current_net_staked["Net Staked %"][0]:,}%"), unsafe_allow_html=True)
+with col3:
+    st.markdown(card_style.format(label="Current Total Supply", value=f"{df_current_net_staked["Current Total Supply"][0]:,} $AXL"), unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+# --- Row 2 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_net_staked_overtime(start_date, end_date):
+    
     start_str = start_date.strftime("%Y-%m-%d")
     end_str = end_date.strftime("%Y-%m-%d")
     
     query = f"""
-        WITH delegate AS (
-            SELECT
-                TRUNC(block_timestamp,'month') AS monthly, 
-                SUM(amount/POW(10,6)) AS delegate_amount,
-                SUM(SUM(amount/POW(10,6))) OVER (ORDER BY TRUNC(block_timestamp,'month') ASC) AS cumulative_delegate_amount
-            FROM axelar.gov.fact_staking
-            WHERE action = 'delegate'
-              AND TX_SUCCEEDED = 'TRUE'
-              AND block_timestamp::date >= '{start_date}'
-              AND block_timestamp::date <= '{end_date}'
-            GROUP BY 1
-        ),
-        undelegate AS (
-            SELECT
-                TRUNC(block_timestamp,'month') AS monthly, 
-                SUM(amount/POW(10,6)) * -1 AS undelegate_amount,
-                SUM(SUM(amount/POW(10,6)) * -1) OVER (ORDER BY TRUNC(block_timestamp,'month') ASC) AS cumulative_undelegate_amount
-            FROM axelar.gov.fact_staking
-            WHERE action = 'undelegate'
-              AND TX_SUCCEEDED = 'TRUE'
-              AND block_timestamp::date >= '{start_str}'
-              AND block_timestamp::date <= '{end_str}'
-            GROUP BY 1
-        )
-        SELECT 
-            (cumulative_delegate_amount + cumulative_undelegate_amount) / 1008585017 * 100 AS share_of_staked_tokens
-        FROM delegate a
-        LEFT OUTER JOIN undelegate b
-          ON a.monthly = b.monthly
-        WHERE a.monthly >= '{start_str}'
-        ORDER BY a.monthly DESC
-        LIMIT 1
+    with overview as (
+    with date_start as (
+    with dates AS (
+    SELECT CAST('2022-02-10' AS DATE) AS start_date 
+    UNION ALL
+    SELECT DATEADD(day, 1, start_date)
+    FROM dates
+    WHERE start_date < CURRENT_DATE())
+    SELECT date_trunc(day, start_date) AS start_date
+    FROM dates),
+    axl_stakers_balance_change as (
+    select * from 
+        (select date_trunc(day, block_timestamp) as date, 
+        user, 
+        sum(amount)/1e6 as balance_change
+        from 
+            (
+            select block_timestamp, DELEGATOR_ADDRESS as user, -1* amount as amount, TX_ID as tx_hash
+            from axelar.gov.fact_staking
+            where action='undelegate' and TX_SUCCEEDED=TRUE
+            union all 
+            select block_timestamp, DELEGATOR_ADDRESS, amount, TX_ID
+            from axelar.gov.fact_staking
+            where action='delegate' and TX_SUCCEEDED=TRUE)
+        group by 1,2)),
+
+    axl_stakers_historic_holders as (
+    select user
+    from axl_stakers_balance_change
+    group by 1),
+
+    user_dates as (
+    select start_date, user
+    from date_start, axl_stakers_historic_holders),
+
+    users_balance as 
+    (select start_date as "Date", user,
+    lag(balance_raw) ignore nulls over (partition by user order by start_date) as balance_lag,
+    ifnull(balance_raw, balance_lag) as balance
+    from (
+        select start_date, a.user, balance_change,
+        sum(balance_change) over (partition by a.user order by start_date) as balance_raw,
+        from user_dates a 
+        left join axl_stakers_balance_change b 
+        on date=start_date and a.user=b.user))
+
+    select "Date", round(sum(balance)) as "Net Staked", 1215160193 as "Current Total Supply", round((100*"Net Staked"/"Current Total Supply"),2) as "Net Staked %"
+    from users_balance
+    where balance>=0.001 and balance is not null
+    group by 1 
+    order by 1 desc)
+    select "Date", "Net Staked"
+    from overview
+    where "Date">='{start_str}' and "Date"<='{end_str}'
+    order by 1
     """
     df = pd.read_sql(query, conn)
-    if not df.empty:
-        return round(df["SHARE_OF_STAKED_TOKENS"].iloc[0], 2)
-    else:
-        return None
+    return df
 
-# --- Row2: Monthly Share Chart ---
-@st.cache_data
-def load_monthly_share_data(start_date, end_date):
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
-    
-    query = f"""
-        WITH delegate AS (
-            SELECT 
-                TRUNC(block_timestamp,'month') AS monthly, 
-                SUM(amount/POW(10,6)) AS delegate_amount,
-                SUM(SUM(amount/POW(10,6))) OVER (ORDER BY TRUNC(block_timestamp,'month') ASC) AS cumulative_delegate_amount,
-                COUNT(DISTINCT tx_id) AS delegate_tx,
-                COUNT(DISTINCT DELEGATOR_ADDRESS) AS delegate_user,
-                AVG(amount/POW(10,6)) AS avg_delegate_amount 
-            FROM axelar.gov.fact_staking
-            WHERE action = 'delegate'
-              AND block_timestamp::date >= '{start_date}'
-              AND block_timestamp::date <= '{end_date}'
-            GROUP BY 1
-        ),
-        undelegate AS (
-            SELECT 
-                TRUNC(block_timestamp,'month') AS monthly, 
-                SUM(amount/POW(10,6)) * -1 AS undelegate_amount,
-                SUM(SUM(amount/POW(10,6)) * -1) OVER (ORDER BY TRUNC(block_timestamp,'month') ASC) AS cumulative_undelegate_amount,
-                COUNT(DISTINCT tx_id) * -1 AS undelegate_tx,
-                COUNT(DISTINCT DELEGATOR_ADDRESS) * -1 AS undelegate_user,
-                AVG(amount/POW(10,6)) AS avg_undelegate_amount 
-            FROM axelar.gov.fact_staking
-            WHERE action = 'undelegate'
-              AND block_timestamp::date >= '{start_date}'
-              AND block_timestamp::date <= '{end_date}'
-            GROUP BY 1
-        )
-        SELECT 
-            a.monthly, 
-            delegate_amount,
-            undelegate_amount,
-            cumulative_delegate_amount,
-            cumulative_undelegate_amount,
-            delegate_tx,
-            undelegate_tx,
-            delegate_user,
-            undelegate_user,
-            1008585017 AS supply,
-            cumulative_delegate_amount + cumulative_undelegate_amount AS net,
-            (cumulative_delegate_amount + cumulative_undelegate_amount) / 1008585017 * 100 AS "Share of Staked Tokens From Supply"
-        FROM delegate a
-        LEFT OUTER JOIN undelegate b ON a.monthly = b.monthly 
-        WHERE a.monthly >= '{start_date}' AND a.monthly <= '{end_date}'
-        ORDER BY 1 ASC
-    """
-    return pd.read_sql(query, conn)
- 
-# --- Load Data ---------------------------------------------------------------------------------------------------------------------------------------------------------------
-share_of_staked_tokens = load_share_of_staked_tokens(start_date, end_date)
-monthly_share_df = load_monthly_share_data(start_date, end_date)
-# --- Row 1: KPI ---------------------------------------------------------------------------------------------------------------------------------------------------------------
+# --- Load Data: Row 5 ----------------------------------------------------------------------------------------
+df_net_staked_overtime = load_net_staked_overtime(start_date, end_date)
+# --- Charts 5 ------------------------------------------------------------------------------------------------
 
-if share_of_staked_tokens is not None:
-    st.metric("Share of Staked Tokens From Supply", f"{share_of_staked_tokens:.2f}%")
-else:
-    st.warning("No data available for the selected period.")
-
-# --- Row 2: Monthly Share of Staked Tokens from Supply Chart -------------------------
-if not monthly_share_df.empty:
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=monthly_share_df['MONTHLY'],
-        y=monthly_share_df['Share of Staked Tokens From Supply'],
-        mode='markers+lines',
-        marker=dict(size=8, color='blue'),
-        line=dict(color='blue', width=2)
-    ))
-    fig.update_layout(
-        title="Monthly Share of Staked Tokens from Supply",
-        xaxis_title="Month",
-        yaxis_title="Share (%)",
-        hovermode='x unified',
-        template='plotly_white',
-        height=500
-    )
-    st.plotly_chart(fig, use_container_width=True)
-else:
-    st.warning("No monthly data available for the selected period.")
-
+fig = px.area(df_net_staked_overtime, x="Date", y="Net Staked", title="AXL Net Staked Amount Over Time")
+fig.update_layout(xaxis_title="", yaxis_title="$AXL", template="plotly_white")
+st.plotly_chart(fig, use_container_width=True)
