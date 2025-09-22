@@ -979,7 +979,7 @@ def load_its_user_retention():
 unp as (
   select TO_VARCHAR(signup_date, 'yyyy-MM') as cohort_date, difference as months, count (distinct TX_SIGNER) as users
   from base
-  where datediff('month', signup_date, current_date()) <= 12
+  where datediff('month', signup_date, current_date()) <= 24
   group by 1,2
   order by 1),
 fine as (select u.*, p.USERS as user0
