@@ -1002,3 +1002,42 @@ df_its_user_retention = load_its_user_retention()
 pivot_its_users = df_its_user_retention.pivot_table(index="Cohort Date", columns="Month", values="Retention Rate", aggfunc="sum", fill_value=0)
 fig_heatmap_its_users = px.imshow(pivot_its_users, text_auto=True, aspect="auto", color_continuous_scale='Viridis', title="ITS User Retention")
 st.plotly_chart(fig_heatmap_its_users, use_container_width=True)
+
+# --- Row 9 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_gmp_user_retention():
+
+    query = f"""
+    with base as (SELECT  
+    data:call.transaction.from::STRING AS tx_signer,
+    min(date_trunc('month', created_at)) over (partition by tx_signer) as signup_date,
+    date_trunc('month', created_at) as activity_date,
+    datediff('month', signup_date, activity_date) as difference
+  FROM axelar.axelscan.fact_gmp 
+  WHERE status = 'executed' AND simplified_status = 'received'),
+unp as (
+  select TO_VARCHAR(signup_date, 'yyyy-MM') as cohort_date, difference as months, count (distinct TX_SIGNER) as users
+  from base
+  where datediff('month', signup_date, current_date()) <= 24
+  group by 1,2
+  order by 1),
+fine as (select u.*, p.USERS as user0
+  from unp u left join unp p on u.COHORT_DATE = p.COHORT_DATE
+  where p.MONTHS = 0)
+select 
+  COHORT_DATE as "Cohort Date", 
+  MONTHS as "Month",
+  round(100 * users / user0 , 2 ) as "Retention Rate"
+from fine
+having round(100 * users / user0 , 2 ) <> 100 
+order by 1 desc, 2
+
+    """
+    df = pd.read_sql(query, conn)
+    return df
+# === Load Data: Row 9 ====================================
+df_gmp_user_retention = load_gmp_user_retention()
+# === Chart: Heatmap (Row 9) ==============================
+pivot_gmp_users = df_gmp_user_retention.pivot_table(index="Cohort Date", columns="Month", values="Retention Rate", aggfunc="sum", fill_value=0)
+fig_heatmap_gmp_users = px.imshow(pivot_gmp_users, text_auto=True, aspect="auto", color_continuous_scale='Viridis', title="GMP User Retention")
+st.plotly_chart(fig_heatmap_gmp_users, use_container_width=True)
