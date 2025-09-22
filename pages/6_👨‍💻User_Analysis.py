@@ -985,10 +985,13 @@ unp as (
 fine as (select u.*, p.USERS as user0
   from unp u left join unp p on u.COHORT_DATE = p.COHORT_DATE
   where p.MONTHS = 0)
-select COHORT_DATE as "Cohort Date", MONTHS as "Month",round(100 * users / user0 , 2 ) as "Retention Rate"
+select 
+  COHORT_DATE as "Cohort Date", 
+  MONTHS as "Month",
+  round(100 * users / user0 , 2 ) as "Retention Rate"
 from fine
-having RETENTION_RATE <> 100 
-order by 1 desc, 2  
+having round(100 * users / user0 , 2 ) <> 100 
+order by 1 desc, 2
 
     """
     df = pd.read_sql(query, conn)
