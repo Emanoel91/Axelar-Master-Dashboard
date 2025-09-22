@@ -114,31 +114,65 @@ if data and "data" in data:
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    # --- Display Table ---
-# --    st.dataframe(df.style.format({
-# --        "Supply": "{:,.2f}",
-# --        "Total TVL": "{:,.2f}",
-# --        "Price (USD)": "{:,.4f}",
-# --        "TVL (USD)": "{:,.0f}",
-# --        "Total Asset Value (USD)": "{:,.2f}"
-# --    }), use_container_width=True)
 else:
     st.warning("No data available from API.")
+
 # ----------------------------------------------------------------------------------------------------------------------------------------------
 unique_assets = df.drop_duplicates(subset=["Asset ID"])
 total_axelar_tvl = unique_assets["Total Asset Value (USD)"].sum()
 
-# --- KPI ---
-st.markdown(
-    f"""
-    <div style="background-color:#d9f0fc; padding:20px; border-radius:15px; text-align:center;">
-        <h2 style="color:#fc9608; font-size:22px; margin-bottom:5px;">Total Axelar TVL (Latest update)</h2>
-        <h1 style="color:#006ac9; font-size:48px; font-weight:bold;">${total_axelar_tvl:,.0f}</h1>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# --- Load AXL Price & Supply API ---
+@st.cache_data(ttl=3600)
+def load_axl_price_supply():
+    try:
+        # دریافت قیمت
+        price_url = "https://api.axelarscan.io/api/getTokensPrice?symbol=AXL"
+        price_res = requests.get(price_url).json()
+        axl_price = price_res["AXL"]["price"]
+
+        # دریافت عرضه کل
+        supply_url = "https://api.axelarscan.io/api/getTotalSupply"
+        supply_res = requests.get(supply_url).json()
+        axl_supply = float(supply_res)  # API فقط عدد برمی‌گردونه
+
+        # محاسبه FDV
+        fdv = axl_price * axl_supply
+        return axl_price, axl_supply, fdv
+    except Exception as e:
+        st.error(f"Error fetching AXL FDV data: {e}")
+        return None, None, None
+
+axl_price, axl_supply, axl_fdv = load_axl_price_supply()
+
+# --- KPI Section: Two Columns ---
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown(
+        f"""
+        <div style="background-color:#d9f0fc; padding:20px; border-radius:15px; text-align:center;">
+            <h2 style="color:#fc9608; font-size:22px; margin-bottom:5px;">Total Axelar TVL (Latest update)</h2>
+            <h1 style="color:#006ac9; font-size:48px; font-weight:bold;">${total_axelar_tvl:,.0f}</h1>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with col2:
+    if axl_fdv:
+        st.markdown(
+            f"""
+            <div style="background-color:#fef6e4; padding:20px; border-radius:15px; text-align:center;">
+                <h2 style="color:#d17c00; font-size:22px; margin-bottom:5px;">AXL FDV (Fully Diluted Valuation)</h2>
+                <h1 style="color:#ff7f50; font-size:48px; font-weight:bold;">${axl_fdv:,.0f}</h1>
+                <p style="color:#444; font-size:16px;">Price: ${axl_price:,.4f} | Total Supply: {axl_supply:,.0f}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
 # -----------
+
 asset_type_df = unique_assets.copy()
 asset_type_df["Asset Type Label"] = asset_type_df["Asset Type"].apply(
     lambda x: "ITS" if str(x).lower() == "its" else "non-ITS"
@@ -176,6 +210,7 @@ with col1:
     st.plotly_chart(fig_asset_type, use_container_width=True)
 with col2:
     st.plotly_chart(fig_chain, use_container_width=True)
+
 # ------------------------------------------------------------------------------------------------------------------------------------------------
 # --- Load Chains API ---
 @st.cache_data(ttl=3600)
