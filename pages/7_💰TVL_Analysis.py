@@ -134,14 +134,40 @@ total_axelar_tvl = unique_assets["Total Asset Value (USD)"].sum()
 # --- KPI ---
 st.markdown(
     f"""
-    <div style="background-color:#d9f0fc; padding:20px; border-radius:15px; text-align:center;">
-        <h2 style="color:#fc9608; font-size:22px; margin-bottom:5px;">Total Axelar TVL (Latest update)</h2>
-        <h1 style="color:#006ac9; font-size:48px; font-weight:bold;">${total_axelar_tvl:,.0f}</h1>
+    <div style="
+        background-color:#d9f0fc; 
+        padding:30px; 
+        border-radius:15px; 
+        text-align:center; 
+        position:relative;
+        overflow:hidden;
+    ">
+        <!-- لوگو به عنوان واترمارک بکگراند -->
+        <img src="https://axelarscan.io/logos/logo.png" 
+             style="
+                position:absolute; 
+                top:50%; 
+                left:50%; 
+                transform:translate(-50%, -50%); 
+                opacity:0.08; 
+                width:250px; 
+                height:auto;
+             "
+        >
+        
+        <!-- متن اصلی -->
+        <h2 style="color:#fc9608; font-size:22px; margin-bottom:5px; position:relative; z-index:1;">
+            Total Axelar TVL (Latest update)
+        </h2>
+        <h1 style="color:#006ac9; font-size:48px; font-weight:bold; position:relative; z-index:1;">
+            ${total_axelar_tvl:,.0f}
+        </h1>
     </div>
     """,
     unsafe_allow_html=True
 )
 
+# -----------
 asset_type_df = unique_assets.copy()
 asset_type_df["Asset Type Label"] = asset_type_df["Asset Type"].apply(
     lambda x: "ITS" if str(x).lower() == "its" else "non-ITS"
