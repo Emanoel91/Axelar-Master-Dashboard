@@ -2,6 +2,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 import streamlit as st
+import requests
 
 # --- Page Config: Tab Title & Icon ---
 st.set_page_config(
@@ -66,96 +67,187 @@ st.plotly_chart(fig1, use_container_width=True)
 
 # --- Row 2: Normalized Area Chart --------------------------------
 
-df_grouped = df.groupby(["date", "asset_type"])["tvl"].sum().reset_index()
-fig2 = px.area(
-    df_grouped,
-    x="date",
-    y="tvl",
-    color="asset_type",
-    groupnorm="fraction",
-    title="Percentage Share of ITS and Non-ITS Assets in TVL Over Time (%)",
-)
-st.plotly_chart(fig2, use_container_width=True)
+# --- Load API Data ---
+@st.cache_data(ttl=3600)
+def load_axelar_api():
+    url = "https://api.axelarscan.io/api/getTVL"  
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.error(f"Failed to fetch API data: {response.status_code}")
+        return None
 
-# --- Row3: Donut chart و KPI ---------------------------------
-st.subheader("Latest Day TVL Breakdown")
-latest_date = df["date"].max()
-latest_df = df[df["date"] == latest_date]
-total_tvl = latest_df["tvl"].sum()
+data = load_axelar_api()
 
-# Calculate the previous day's TVL ----------------------
-prev_date = latest_date - pd.Timedelta(days=1)
-prev_df = df[df["date"] == prev_date]
-prev_total_tvl = prev_df["tvl"].sum() if not prev_df.empty else None
+# --- Parse Data ---
+if data and "data" in data:
+    rows = []
+    for asset in data["data"]:
+        asset_id = asset.get("asset", "")
+        price = asset.get("price", None)
+        total = asset.get("total", None)
+        value = asset.get("value", None)
+        asset_type = asset.get("assetType", "")
+        abnormal = asset.get("is_abnormal_supply", False)
 
-# Calculate the percentage change ---------------------
-if prev_total_tvl and prev_total_tvl > 0:
-    change_pct = (total_tvl - prev_total_tvl) / prev_total_tvl * 100
+        tvl_data = asset.get("tvl", {})
+        for chain, details in tvl_data.items():
+            total_tvl = details.get("total", None)
+            rows.append({
+                "Asset ID": asset_id,
+                "Asset Type": asset_type,
+                "Chain": chain,
+                "Token Symbol": details.get("contract_data", {}).get("symbol") if "contract_data" in details else None,
+                "Token Name": details.get("contract_data", {}).get("name") if "contract_data" in details else None,
+                "Contract Address": details.get("contract_data", {}).get("contract_address") if "contract_data" in details else None,
+                "Gateway Address": details.get("gateway_address", None),
+                "Supply": details.get("supply", None),
+                "Total TVL": total_tvl,
+                "Price (USD)": price,
+                "TVL (USD)": round(total_tvl * price, 0) if total_tvl is not None and price is not None else None,
+                "Total Asset Value (USD)": value,
+                "Is Abnormal?": abnormal
+            })
+
+    df = pd.DataFrame(rows)
+
+    # --- Format Numbers ---
+    numeric_cols = ["Supply", "Total TVL", "Price (USD)", "TVL (USD)", "Total Asset Value (USD)"]
+    for col in numeric_cols:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    # --- Display Table ---
+# --    st.dataframe(df.style.format({
+# --        "Supply": "{:,.2f}",
+# --        "Total TVL": "{:,.2f}",
+# --        "Price (USD)": "{:,.4f}",
+# --        "TVL (USD)": "{:,.0f}",
+# --        "Total Asset Value (USD)": "{:,.2f}"
+# --    }), use_container_width=True)
 else:
-    change_pct = None
+    st.warning("No data available from API.")
+# ----------------------------------------------------------------------------------------------------------------------------------------------
+unique_assets = df.drop_duplicates(subset=["Asset ID"])
+total_axelar_tvl = unique_assets["Total Asset Value (USD)"].sum()
+
+# --- KPI ---
+st.markdown(
+    f"""
+    <div style="background-color:#1E1E1E; padding:20px; border-radius:15px; text-align:center;">
+        <h2 style="color:#00FFAA; font-size:22px; margin-bottom:5px;">Total Axelar TVL</h2>
+        <h1 style="color:white; font-size:48px; font-weight:bold;">${total_axelar_tvl:,.0f}</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+asset_type_df = unique_assets.copy()
+asset_type_df["Asset Type Label"] = asset_type_df["Asset Type"].apply(
+    lambda x: "ITS" if str(x).lower() == "its" else "non-ITS"
+)
+asset_type_summary = asset_type_df.groupby("Asset Type Label", as_index=False)["Total Asset Value (USD)"].sum()
+
+fig_asset_type = px.pie(
+    asset_type_summary,
+    values="Total Asset Value (USD)",
+    names="Asset Type Label",
+    hole=0.5,
+    color="Asset Type Label",
+    color_discrete_map={"ITS": "#00FFAA", "non-ITS": "#FF4B4B"},
+    title="Share of TVL by Asset Type"
+)
+fig_asset_type.update_traces(textposition="inside", textinfo="percent+label")
+fig_asset_type.update_layout(showlegend=True)
+
+df["TVL (USD)"] = (df["Total TVL"] * df["Price (USD)"]).round(0)
+
+chain_summary = df.groupby("Chain", as_index=False)["TVL (USD)"].sum()
+
+fig_chain = px.pie(
+    chain_summary,
+    values="TVL (USD)",
+    names="Chain",
+    hole=0.5,
+    title="Share of TVL by Chain"
+)
+fig_chain.update_traces(textposition="inside", textinfo="percent+label")
+fig_chain.update_layout(showlegend=True)
 
 col1, col2 = st.columns(2)
 with col1:
-    fig3 = px.pie(
-        latest_df,
-        names="asset_type",
-        values="tvl",
-        hole=0.5,
-        title=f"TVL by Asset Type ({latest_date.date()})",
-    )
-    st.plotly_chart(fig3, use_container_width=True)
-
+    st.plotly_chart(fig_asset_type, use_container_width=True)
 with col2:
-    st.markdown("### Axelar Current TVL")
-    st.markdown(f"<h1 style='margin: 0;'>${total_tvl:,.0f}</h1>", unsafe_allow_html=True)
-    if change_pct is not None:
-        color = "green" if change_pct > 0 else "red"
-        sign = "+" if change_pct > 0 else ""
-        st.markdown(
-            f"<p style='color:{color}; font-size: 24px; margin: 0;'>{sign}{change_pct:.2f}% in 24h</p>", 
-            unsafe_allow_html=True
-        )
+    st.plotly_chart(fig_chain, use_container_width=True)
+# ------------------------------------------------------------------------------------------------------------------------------------------------
+# --- Load Chains API ---
+@st.cache_data(ttl=3600)
+def load_chains_api():
+    url = "https://api.llama.fi/v2/chains"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
     else:
-        st.markdown("<p style='color:gray;'>No data for previous day</p>", unsafe_allow_html=True)
+        st.error(f"Failed to fetch Chains API: {response.status_code}")
+        return []
 
-# --- Row4: Area Chart ---
-st.subheader("Monthly TVL Stats")
-df_monthly = df.copy()
-df_monthly["month"] = df_monthly["date"].dt.to_period("M")
-monthly_stats = df_monthly.groupby(["month", "asset_type"])["tvl"].agg(
-    ["max", "mean", "min"]
-).reset_index()
-monthly_stats["month"] = monthly_stats["month"].dt.to_timestamp()
+chains_data = load_chains_api()
 
-col1, col2, col3 = st.columns(3)
-with col1:
-    fig_max = px.area(
-        monthly_stats,
-        x="month",
-        y="max",
-        color="asset_type",
-        title="Maximum TVL per Month",
-    )
-    st.plotly_chart(fig_max, use_container_width=True)
+chains_df = pd.DataFrame(chains_data)
 
-with col2:
-    fig_avg = px.area(
-        monthly_stats,
-        x="month",
-        y="mean",
-        color="asset_type",
-        title="Average TVL per Month",
-    )
-    st.plotly_chart(fig_avg, use_container_width=True)
+chains_df = chains_df[["name", "tvl", "tokenSymbol"]]
+chains_df.columns = ["Chain Name", "TVL (USD)", "Native Token Symbol"]
 
-with col3:
-    fig_min = px.area(
-        monthly_stats,
-        x="month",
-        y="min",
-        color="asset_type",
-        title="Minimum TVL per Month",
-    )
-    st.plotly_chart(fig_min, use_container_width=True)
+chains_df = pd.concat([
+    chains_df,
+    pd.DataFrame([{
+        "Chain Name": "Axelar",
+        "TVL (USD)": total_axelar_tvl,
+        "Native Token Symbol": "AXL"
+    }])
+], ignore_index=True)
 
+chains_df = chains_df.sort_values("TVL (USD)", ascending=False).reset_index(drop=True)
 
+chains_df.index = chains_df.index + 1
+
+st.markdown("### TVL of Different Chains")
+st.dataframe(
+    chains_df.style.format({
+        "TVL (USD)": "{:,.0f}"
+    }),
+    use_container_width=True
+)
+
+# ----------------------------------------------------------------------------------------------------------------------------
+top_20_chains = chains_df.head(20).reset_index()
+
+def human_format(num):
+    if num >= 1e9:
+        return f"{num/1e9:.1f}B"
+    elif num >= 1e6:
+        return f"{num/1e6:.1f}M"
+    elif num >= 1e3:
+        return f"{num/1e3:.1f}K"
+    else:
+        return str(int(num))
+
+# --- Bar Chart ---
+fig_bar = px.bar(
+    top_20_chains,
+    x="Chain Name",
+    y="TVL (USD)",
+    color="Chain Name",
+    text=top_20_chains["TVL (USD)"].apply(human_format),
+    title="Top 20 Chains by TVL ($USD)"
+)
+
+fig_bar.update_traces(textposition="outside")
+fig_bar.update_layout(
+    xaxis_title="Chain",
+    yaxis_title="$USD",
+    showlegend=False,
+    plot_bgcolor="white"
+)
+
+st.plotly_chart(fig_bar, use_container_width=True)
