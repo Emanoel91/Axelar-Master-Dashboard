@@ -1079,4 +1079,4 @@ df_tt_user_retention = load_tt_user_retention()
 # === Chart: Heatmap (Row 10) ==============================
 pivot_tt_users = df_tt_user_retention.pivot_table(index="Cohort Date", columns="Month", values="Retention Rate", aggfunc="sum", fill_value=0)
 fig_heatmap_tt_users = px.imshow(pivot_tt_users, text_auto=True, aspect="auto", color_continuous_scale='Viridis', title="Token Transfers - User Retention")
-st.plotly_chart(fig_heatmap_gmp_users, use_container_width=True)
+st.plotly_chart(fig_heatmap_tt_users, use_container_width=True)
