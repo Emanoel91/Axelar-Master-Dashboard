@@ -24,29 +24,9 @@ df = df.dropna(subset=["tvl"])
 # Data sorting
 df = df.sort_values("date")
 
-# --- Title with Logo ---------------------------------------------------------------------------------------------------
-st.markdown(
-    """
-    <div style="display: flex; align-items: center; gap: 15px;">
-        <img src="https://axelarscan.io/logos/chains/axelarnet.svg" alt="Axelar Logo" style="width:60px; height:60px;">
-        <h1 style="margin: 0;">Axelar TVL Monitoring: ITS vs. Non-ITS</h1>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# --- Title ---------------------------------------------------------------------------------------------------
+st.title("💰TVL Analysis")
 
-# --- Reference and Rebuild Info --------------------------------------------------------------------------------------
-st.markdown(
-    """
-    
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="https://pbs.twimg.com/profile_images/1841479747332608000/bindDGZQ_400x400.jpg" alt="Eman Raz" style="width:25px; height:25px; border-radius: 50%;">
-            <span>Built by: <a href="https://x.com/0xeman_raz" target="_blank">Eman Raz</a></span>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
 # --- Row 1: Stacked Bar Chart ------------------
 
 st.info(
