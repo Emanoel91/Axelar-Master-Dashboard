@@ -144,13 +144,21 @@ def load_axl_price_supply():
 
 axl_price, axl_supply, axl_fdv = load_axl_price_supply()
 
-# --- KPI Section: Two Columns ---
+# --- KPI Section: Two Columns with Equal Height ---
 col1, col2 = st.columns(2)
+
+box_style = """
+    background-color:{bg};
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    min-height:180px;
+"""
 
 with col1:
     st.markdown(
         f"""
-        <div style="background-color:#d9f0fc; padding:20px; border-radius:15px; text-align:center;">
+        <div style="{box_style.format(bg='#d9f0fc')}">
             <h2 style="color:#fc9608; font-size:22px; margin-bottom:5px;">Total Axelar TVL (Latest update)</h2>
             <h1 style="color:#006ac9; font-size:48px; font-weight:bold;">${total_axelar_tvl:,.0f}</h1>
         </div>
@@ -162,10 +170,10 @@ with col2:
     if axl_fdv:
         st.markdown(
             f"""
-            <div style="background-color:#fef6e4; padding:20px; border-radius:15px; text-align:center;">
+            <div style="{box_style.format(bg='#fef6e4')}">
                 <h2 style="color:#d17c00; font-size:22px; margin-bottom:5px;">AXL FDV (Fully Diluted Valuation)</h2>
                 <h1 style="color:#ff7f50; font-size:48px; font-weight:bold;">${axl_fdv:,.0f}</h1>
-                <p style="color:#444; font-size:16px;">Price: ${axl_price:,.4f} | Total Supply: {axl_supply:,.0f}</p>
+                <p style="color:#444; font-size:16px;">Price: ${axl_price:,.4f} | Supply: {axl_supply:,.0f}</p>
             </div>
             """,
             unsafe_allow_html=True
