@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 import snowflake.connector
-import plotly.graph_objects as go
 import plotly.express as px
+import requests
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 
@@ -42,6 +42,16 @@ conn = snowflake.connector.connect(
     schema=schema
 )
 
+# --- Get Total Supply from API ----------------------------------------------------------------------------------------
+@st.cache_data
+def get_total_supply():
+    url = "https://api.axelarscan.io/api/getTotalSupply"
+    response = requests.get(url)
+    response.raise_for_status()
+    return int(response.text.strip())
+
+CURRENT_TOTAL_SUPPLY = get_total_supply()
+
 # --- Date Inputs ---------------------------------------------------------------------------------------------------
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -63,8 +73,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # --- Row 1 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
-def load_current_net_staked():
-
+def load_current_net_staked(total_supply):
     query = f"""
     with date_start as (
     with dates AS (
@@ -111,19 +120,20 @@ def load_current_net_staked():
         left join axl_stakers_balance_change b 
         on date=start_date and a.user=b.user))
 
-    select "Date", round(sum(balance)) as "Net Staked", 1215160193 as "Current Total Supply", round((100*"Net Staked"/"Current Total Supply"),2) as "Net Staked %"
+    select "Date", round(sum(balance)) as "Net Staked", {total_supply} as "Current Total Supply",
+           round((100*"Net Staked"/{total_supply}),2) as "Net Staked %"
     from users_balance
     where balance>=0.001 and balance is not null
     group by 1 
     order by 1 desc
     limit 1
     """
-
     df = pd.read_sql(query, conn)
     return df
 
 # --- Load Data: Row --------------------------------------------------------------------------------------------------------
-df_current_net_staked = load_current_net_staked()
+df_current_net_staked = load_current_net_staked(CURRENT_TOTAL_SUPPLY)
+
 # --- KPIs: Row 1 ---------------------------------------------------------------------------------------------------
 card_style = """
     <div style="
@@ -141,17 +151,17 @@ card_style = """
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.markdown(card_style.format(label="Current Net Staked", value=f"{df_current_net_staked["Net Staked"][0]:,} $AXL"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="Current Net Staked", value=f"{df_current_net_staked['Net Staked'][0]:,} $AXL"), unsafe_allow_html=True)
 with col2:
-    st.markdown(card_style.format(label="%Staked-to-Total Supply", value=f"{df_current_net_staked["Net Staked %"][0]:,}%"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="%Staked-to-Total Supply", value=f"{df_current_net_staked['Net Staked %'][0]:,}%"), unsafe_allow_html=True)
 with col3:
-    st.markdown(card_style.format(label="Current Total Supply", value=f"{df_current_net_staked["Current Total Supply"][0]:,} $AXL"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="Current Total Supply", value=f"{df_current_net_staked['Current Total Supply'][0]:,} $AXL"), unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
+
 # --- Row 2 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 @st.cache_data
-def load_net_staked_overtime(start_date, end_date):
-    
+def load_net_staked_overtime(start_date, end_date, total_supply):
     start_str = start_date.strftime("%Y-%m-%d")
     end_str = end_date.strftime("%Y-%m-%d")
     
@@ -202,7 +212,8 @@ def load_net_staked_overtime(start_date, end_date):
         left join axl_stakers_balance_change b 
         on date=start_date and a.user=b.user))
 
-    select "Date", round(sum(balance)) as "Net Staked", 1215160193 as "Current Total Supply", round((100*"Net Staked"/"Current Total Supply"),2) as "Net Staked %"
+    select "Date", round(sum(balance)) as "Net Staked", {total_supply} as "Current Total Supply",
+           round((100*"Net Staked"/{total_supply}),2) as "Net Staked %"
     from users_balance
     where balance>=0.001 and balance is not null
     group by 1 
@@ -216,9 +227,9 @@ def load_net_staked_overtime(start_date, end_date):
     return df
 
 # --- Load Data: Row 5 ----------------------------------------------------------------------------------------
-df_net_staked_overtime = load_net_staked_overtime(start_date, end_date)
-# --- Charts 5 ------------------------------------------------------------------------------------------------
+df_net_staked_overtime = load_net_staked_overtime(start_date, end_date, CURRENT_TOTAL_SUPPLY)
 
+# --- Charts 5 ------------------------------------------------------------------------------------------------
 fig = px.area(df_net_staked_overtime, x="Date", y="Net Staked", title="AXL Net Staked Amount Over Time")
 fig.update_layout(xaxis_title="", yaxis_title="$AXL", template="plotly_white")
 st.plotly_chart(fig, use_container_width=True)
