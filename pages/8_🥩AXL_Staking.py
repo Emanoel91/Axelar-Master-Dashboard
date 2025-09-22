@@ -364,3 +364,53 @@ with col2:
                        overlaying="y", side="right"), xaxis=dict(title=""),
         barmode="group", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
     st.plotly_chart(fig2, use_container_width=True)
+
+# --- Row 5 ---------------------------------------------------------------------------------------------------------
+@st.cache_data
+def load_stakers_overtime(timeframe, start_date, end_date):
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+
+    query = f"""
+    with table1 as (select date_trunc('{timeframe}',block_timestamp) as "Date", count(distinct delegator_address) as "Total Stakers"
+    from axelar.gov.fact_staking
+    where tx_succeeded='true' and currency='uaxl' and action='delegate'
+    group by 1
+    order by 1),
+    table2 as (with tab1 as (select delegator_address, min(block_timestamp::date) as first_tx
+    from axelar.gov.fact_staking
+    where tx_succeeded='true' and currency='uaxl' and action='delegate'
+    group by 1)
+    select date_trunc('{timeframe}',first_tx) as "Date", count(distinct delegator_address) as "New Stakers",
+    sum("New Stakers") over (order by "Date") as "Stakers Growth"
+    from tab1
+    group by 1)
+    select table1."Date" as "Date", "Total Stakers", "New Stakers", "Total Stakers"-"New Stakers" as "Returning Stakers", "Stakers Growth"
+    from table1 left join table2 on table1."Date"=table2."Date"
+    where table1."Date">='{start_str}' AND table1."Date"<='{end_str}'
+    order by 1
+    """
+
+    df = pd.read_sql(query, conn)
+    return df
+
+# --- Load Data: Row 5 ---------------------------------------------------------------------------------------------------
+df_stakers_overtime = load_stakers_overtime(timeframe, start_date, end_date)
+# --- Charts: Row 5 ------------------------------------------------------------------------------------------------------
+col1, col2 = st.columns(2)
+
+with col1:
+    fig_b1 = go.Figure()
+    # Stacked Bars
+    fig_b1.add_trace(go.Bar(x=df_stakers_overtime["Date"], y=df_stakers_overtime["New Stakers"], name="New Stakers", marker_color="#0ed145"))
+    fig_b1.add_trace(go.Bar(x=df_stakers_overtime["Date"], y=df_stakers_overtime["Returning Stakers"], name="Returning Stakers", marker_color="blue"))
+    fig_b1.add_trace(go.Scatter(x=df_stakers_overtime["Date"], y=df_stakers_overtime["Total Stakers"], name="Total Stakers", mode="lines", line=dict(color="black", width=2)))
+    fig_b1.update_layout(barmode="stack", title="Number of Stakers Over Time", yaxis=dict(title="Wallet count"),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5))
+    st.plotly_chart(fig_b1, use_container_width=True)
+
+with col2:
+    fig2 = px.area(df_stakers_overtime, x="Date", y="Stakers Growth", title="Stakers Growth Over Time")
+    fig2.update_layout(xaxis_title="", yaxis_title="wallet count", template="plotly_white")
+    st.plotly_chart(fig2, use_container_width=True)
