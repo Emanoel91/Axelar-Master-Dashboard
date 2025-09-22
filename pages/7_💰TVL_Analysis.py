@@ -125,17 +125,17 @@ total_axelar_tvl = unique_assets["Total Asset Value (USD)"].sum()
 @st.cache_data(ttl=3600)
 def load_axl_price_supply():
     try:
-        # دریافت قیمت
+        # get price
         price_url = "https://api.axelarscan.io/api/getTokensPrice?symbol=AXL"
         price_res = requests.get(price_url).json()
         axl_price = price_res["AXL"]["price"]
 
-        # دریافت عرضه کل
+        # get total supply
         supply_url = "https://api.axelarscan.io/api/getTotalSupply"
         supply_res = requests.get(supply_url).json()
         axl_supply = float(supply_res)  # API فقط عدد برمی‌گردونه
 
-        # محاسبه FDV
+        # get fdv
         fdv = axl_price * axl_supply
         return axl_price, axl_supply, fdv
     except Exception as e:
@@ -150,7 +150,7 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown(
         f"""
-        <div style="background-color:#d9f0fc; padding:20px; border-radius:15px; text-align:center;">
+        <div style="background-color:#ffffff; padding:20px; border-radius:15px; text-align:center;">
             <h2 style="color:#fc9608; font-size:22px; margin-bottom:5px;">Total Axelar TVL (Latest update)</h2>
             <h1 style="color:#006ac9; font-size:48px; font-weight:bold;">${total_axelar_tvl:,.0f}</h1>
         </div>
@@ -162,7 +162,7 @@ with col2:
     if axl_fdv:
         st.markdown(
             f"""
-            <div style="background-color:#fef6e4; padding:20px; border-radius:15px; text-align:center;">
+            <div style="background-color:#ffffff; padding:20px; border-radius:15px; text-align:center;">
                 <h2 style="color:#d17c00; font-size:22px; margin-bottom:5px;">AXL FDV (Fully Diluted Valuation)</h2>
                 <h1 style="color:#ff7f50; font-size:48px; font-weight:bold;">${axl_fdv:,.0f}</h1>
                 <p style="color:#444; font-size:16px;">Price: ${axl_price:,.4f} | Total Supply: {axl_supply:,.0f}</p>
