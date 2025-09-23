@@ -208,8 +208,8 @@ card_style = """
         text-align: center;
         box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
         ">
-        <h4 style="margin: 0; font-size: 20px; color: #555;">{label}</h4>
-        <p style="margin: 5px 0 0; font-size: 20px; font-weight: bold; color: #000;">{value}</p>
+        <h4 style="margin: 0; font-size: 20px; color: #000000;">{label}</h4>
+        <p style="margin: 5px 0 0; font-size: 20px; font-weight: bold; color: #000000;">{value}</p>
     </div>
 """
 
