@@ -204,7 +204,7 @@ card_style = """
         background-color: #ffffff;
         border: 20px solid #ffffff;
         border-radius: 35px;
-        padding: 1px;
+
         text-align: center;
         box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
         ">
