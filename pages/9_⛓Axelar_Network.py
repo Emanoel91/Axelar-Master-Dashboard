@@ -152,7 +152,7 @@ pivot_tt_users = df_user_retention.pivot_table(
 )
 fig_heatmap_tt_users = px.imshow(
     pivot_tt_users, text_auto=True, aspect="auto",
-    color_continuous_scale='Viridis', title="Token Transfers - User Retention"
+    color_continuous_scale='Viridis', title="Axelar Network: User Retention"
 )
 st.plotly_chart(fig_heatmap_tt_users, use_container_width=True)
 
@@ -243,29 +243,18 @@ def load_weekly_tps():
 @st.cache_data
 def load_weekly_success_rate():
     query = """
-      with axl_price as (
-        select 
-            date(recorded_at) as days,
-            avg(price) as ax_price
-        from osmosis.price.dim_prices 
-        where symbol = 'AXL' and provider = 'coin market cap'
-        and days >= current_date - interval '1 year'
-        group by 1
-      )
       select 
-          date_trunc('week', BLOCK_TIMESTAMP)::date as "Date",
-          count(*) as TX,
-          sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end) as "Success TX",
-          (sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100 as "Success %",
-          round((100 - (sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100),2) as failure_rate,
-          round(100*(((sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100) - 
-                     lag((sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100,1) over(order by "Date"))/
-                     lag((sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100,1) over(order by "Date"),2) as "Success Rate Change %"
-      from axelar.core.fact_transactions , axl_price
-      where block_timestamp::date between current_date - interval '1 year' and current_date -1
-        and block_timestamp::date = days
+      date_trunc('week', BLOCK_TIMESTAMP)::date AS date,
+      count(*) AS TX,
+      sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end) AS "Success TX",
+      ("Success TX"/TX)*100 AS "Success %",
+      round((100-"Success %"),2) as failure_rate ,
+      round ( 100*("Success %"-lag("Success %",1)over(order by date))/lag("Success %",1)over(order by date),2) as  "Success rate change %"
+      from axelar.core.fact_transactions
+      where BLOCK_TIMESTAMP::date between current_date - interval ' 1 year ' and current_date -1
       group by 1 
       order by 1 desc
+
     """
     df = pd.read_sql(query, conn)
     return df
