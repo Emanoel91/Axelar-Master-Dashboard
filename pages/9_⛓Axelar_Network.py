@@ -94,14 +94,6 @@ conn = snowflake.connector.connect(
     schema=schema
 )
 
-# --- Time Frame & Period Selection --------------------------------------------------------------------------------------
-col1, col2 = st.columns(2)
-
-with col1:
-    start_date = st.date_input("Start Date", value=pd.to_datetime("2022-01-01"))
-with col2:
-    end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30"))
-
 st.markdown(
     """
     <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
