@@ -201,8 +201,8 @@ df_user_stats_success_rate = load_user_stats_success_rate()
 # === KPIs: Row 2 =========================================
 card_style = """
     <div style="
-        background-color: #f9f9f9;
-        border: 1px solid #e0e0e0;
+        background-color: #ffffff;
+        border: 1px solid #ffffff;
         border-radius: 12px;
         padding: 20px;
         text-align: center;
