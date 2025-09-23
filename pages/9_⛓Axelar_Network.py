@@ -203,8 +203,8 @@ card_style = """
     <div style="
         background-color: #ffffff;
         border: 1px solid #ffffff;
-        border-radius: 12px;
-        padding: 20px;
+        border-radius: 1px;
+        padding: 1px;
         text-align: center;
         box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
         ">
