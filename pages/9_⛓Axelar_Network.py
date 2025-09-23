@@ -249,7 +249,7 @@ def load_weekly_success_rate():
       sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end) AS "Success TX",
       ("Success TX"/TX)*100 AS "Success %",
       round((100-"Success %"),2) as failure_rate ,
-      round ( 100*("Success %"-lag("Success %",1)over(order by "Date"))/lag("Success %",1)over(order by "Date"),2) as  "Success rate change %"
+      round ( 100*("Success %"-lag("Success %",1)over(order by "Date"))/lag("Success %",1)over(order by "Date"),2) as  "Success Rate Change %"
       from axelar.core.fact_transactions
       where BLOCK_TIMESTAMP::date between current_date - interval ' 1 year ' and current_date -1
       group by 1 
