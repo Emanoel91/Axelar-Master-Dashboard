@@ -24,7 +24,7 @@ st.sidebar.markdown(
         width: 250px;
         font-size: 13px;
         color: gray;
-        margin-left: 5px; # -- MOVE LEFT
+        margin-left: 5px;
         text-align: left;  
     }
     .sidebar-footer img {
@@ -103,103 +103,95 @@ st.markdown(
     unsafe_allow_html=True
 )
 st.markdown("<br>", unsafe_allow_html=True)
-# --- Row 1 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# --- Row 1: User Retention -------------------------------------------------------------------
 @st.cache_data
 def load_user_retention():
-
-    query = f"""
+    query = """
     with base as (
-  select
-      TX_FROM as TX_SIGNER,
-    min(date_trunc('month', BLOCK_TIMESTAMP)) over (partition by TX_SIGNER) as signup_date,
-    date_trunc('month', BLOCK_TIMESTAMP) as activity_date,
-    datediff('month', signup_date, activity_date) as difference
-  from axelar.core.fact_transactions
-),
-unp as (
-  select
-    TO_VARCHAR(signup_date, 'yyyy-MM') as cohort_date,
-    difference as months,
-    count (distinct TX_SIGNER) as users
-  from
-    base
-  where
-    datediff('month', signup_date, current_date()) <= 24
-  group by
-    1,2
-  order by
-    1
-),
-fine as (
-  select
-    u.*,
-    p.USERS as user0
-  from
-    unp u
-    left join unp p on u.COHORT_DATE = p.COHORT_DATE
-  where
-    p.MONTHS = 0
-)
-select
-  COHORT_DATE as "Cohort Date",
-  MONTHS as "Month",
-  round(100 * users / user0 , 2 ) as "Retention Rate"
-from
-  fine
-having
-  RETENTION_RATE <> 100 
-order by 1 desc, 2  
- 
+      select
+          TX_FROM as TX_SIGNER,
+          min(date_trunc('month', BLOCK_TIMESTAMP)) over (partition by TX_SIGNER) as signup_date,
+          date_trunc('month', BLOCK_TIMESTAMP) as activity_date,
+          datediff('month', signup_date, activity_date) as difference
+      from axelar.core.fact_transactions
+    ),
+    unp as (
+      select
+        TO_VARCHAR(signup_date, 'yyyy-MM') as cohort_date,
+        difference as months,
+        count(distinct TX_SIGNER) as users
+      from base
+      where datediff('month', signup_date, current_date()) <= 24
+      group by 1,2
+    ),
+    fine as (
+      select
+        u.*,
+        p.users as user0
+      from unp u
+      left join unp p on u.cohort_date = p.cohort_date
+      where p.months = 0
+    )
+    select
+      cohort_date as "Cohort Date",
+      months as "Month",
+      round(100 * users / user0, 2) as "Retention Rate"
+    from fine
+    where round(100 * users / user0, 2) <> 100
+    order by 1 desc, 2
     """
     df = pd.read_sql(query, conn)
     return df
 
 # === Load Data: Row 1 ====================================
 df_user_retention = load_user_retention()
+
 # === Chart: Heatmap (Row 1) ==============================
-pivot_tt_users = df_user_retention.pivot_table(index="Cohort Date", columns="Month", values="Retention Rate", aggfunc="sum", fill_value=0)
-fig_heatmap_tt_users = px.imshow(pivot_tt_users, text_auto=True, aspect="auto", color_continuous_scale='Viridis', title="Token Transfers - User Retention")
+pivot_tt_users = df_user_retention.pivot_table(
+    index="Cohort Date", columns="Month", values="Retention Rate",
+    aggfunc="sum", fill_value=0
+)
+fig_heatmap_tt_users = px.imshow(
+    pivot_tt_users, text_auto=True, aspect="auto",
+    color_continuous_scale='Viridis', title="Token Transfers - User Retention"
+)
 st.plotly_chart(fig_heatmap_tt_users, use_container_width=True)
 
-# --- Row 2 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# --- Row 2: TPS & Success Rate KPIs ----------------------------------------------------------------
 @st.cache_data
 def load_user_stats_tps():
-
-    query = f"""
+    query = """
      select 
-DATE_TRUNC ('week' ,BLOCK_TIMESTAMP ) AS date,
-round((sum(TX_COUNT)/(7*24*3600)),2) AS TPS,
-round ( 100*(TPS-lag(TPS,1)over(order by date))/lag(TPS,1)over(order by date),2) as  "TPS Change%"
-from axelar.core.fact_blocks
-where block_timestamp::date < current_date
-GROUP BY 1
-qualify row_number()over(order by date desc) > 1
-order by 1 desc
-LIMIT 1
-
+        date_trunc('week', BLOCK_TIMESTAMP) as date,
+        round((sum(TX_COUNT)/(7*24*3600)),2) as TPS,
+        round(100*(TPS-lag(TPS,1) over(order by date))/lag(TPS,1) over(order by date),2) as "TPS Change%"
+     from axelar.core.fact_blocks
+     where block_timestamp::date < current_date
+     group by 1
+     qualify row_number() over(order by date desc) > 1
+     order by 1 desc
+     limit 1
     """
     df = pd.read_sql(query, conn)
     return df
-# =======================================================
+
 @st.cache_data
 def load_user_stats_success_rate():
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
-
-    query = f"""
+    query = """
     select 
-    date_trunc('week', BLOCK_TIMESTAMP)::date AS date,
-  count(*) AS TX,
-  sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end) AS "Success TX",
-  ("Success TX"/TX)*100 AS "Success %",
-round((100-"Success %"),2) as failure_rate ,
-round ( 100*("Success %"-lag("Success %",1)over(order by date))/lag("Success %",1)over(order by date),2) as  "Success rate change %"
-  from axelar.core.fact_transactions
-  where BLOCK_TIMESTAMP::date between current_date - interval ' 1 year ' and current_date -1
-  group by 1 
-order by 1 desc
-limit 1
-
+        date_trunc('week', BLOCK_TIMESTAMP)::date as date,
+        count(*) as TX,
+        sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end) as "Success TX",
+        (sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100 as "Success %",
+        round((100 - (sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100),2) as failure_rate,
+        round(100*(( (sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100 )-lag((sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100,1) over(order by date))/
+             lag((sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100,1) over(order by date),2) as "Success rate change %"
+    from axelar.core.fact_transactions
+    where block_timestamp::date between current_date - interval '1 year' and current_date - 1
+    group by 1 
+    order by 1 desc
+    limit 1
     """
     df = pd.read_sql(query, conn)
     return df
@@ -207,7 +199,8 @@ limit 1
 # === Load Data ===========================================
 df_user_stats_tps = load_user_stats_tps()
 df_user_stats_success_rate = load_user_stats_success_rate()
-# === KPIs: Row 1 =========================================
+
+# === KPIs: Row 2 =========================================
 card_style = """
     <div style="
         background-color: #f9f9f9;
@@ -224,60 +217,57 @@ card_style = """
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.markdown(card_style.format(label="TPS Past Week", value=f"{df_user_stats_tps["TPS"][0]:,} Txns"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="TPS Past Week", value=f"{df_user_stats_tps['TPS'][0]:,} Txns"), unsafe_allow_html=True)
 with col2:
-    st.markdown(card_style.format(label="Weekly Change in TPS", value=f"${df_user_stats_tps["TPS Change%"][0]:,}%"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="Weekly Change in TPS", value=f"{df_user_stats_tps['TPS Change%'][0]:,}%"), unsafe_allow_html=True)
 with col3:
-    st.markdown(card_style.format(label="Success Rate", value=f"{df_user_stats_success_rate["Success %"][0]:,}%"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="Success Rate", value=f"{df_user_stats_success_rate['Success %'][0]:,}%"), unsafe_allow_html=True)
 with col4:
-    st.markdown(card_style.format(label="Weekly Change in Success Rate", value=f"{df_user_stats_success_rate["Success rate change %"][0]:,}%"), unsafe_allow_html=True)
+    st.markdown(card_style.format(label="Weekly Change in Success Rate", value=f"{df_user_stats_success_rate['Success rate change %'][0]:,}%"), unsafe_allow_html=True)
 
-# --- Row 3 -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# --- Row 3: Weekly TPS & Success Rate Trends ------------------------------------------------------
 @st.cache_data
 def load_weekly_tps():
-
-    query = f"""
+    query = """
      select 
-DATE_TRUNC ('week' ,BLOCK_TIMESTAMP ) AS "Date",
-round((sum(TX_COUNT)/(7*24*3600)),2) AS TPS,
-round ( 100*(TPS-lag(TPS,1)over(order by "Date"))/lag(TPS,1)over(order by "Date"),2) as  "TPS Change %"
-from axelar.core.fact_blocks
-where 
-BLOCK_TIMESTAMP < current_date 
-GROUP BY 1
-qualify row_number()over(order by "Date" desc) > 1
-order by 1 desc
-
+        date_trunc('week', BLOCK_TIMESTAMP) as "Date",
+        round((sum(TX_COUNT)/(7*24*3600)),2) as TPS,
+        round(100*(TPS-lag(TPS,1) over(order by "Date"))/lag(TPS,1) over(order by "Date"),2) as "TPS Change %"
+     from axelar.core.fact_blocks
+     where block_timestamp < current_date 
+     group by 1
+     qualify row_number() over(order by "Date" desc) > 1
+     order by 1 desc
     """
     df = pd.read_sql(query, conn)
     return df
 
-# =======================================
 @st.cache_data
 def load_weekly_success_rate():
-
-    query = f"""
-      with axl_price as (select 
-    date(RECORDED_AT) AS days ,
-   avg(PRICE) ax_price
-  from 
-  osmosis.price.dim_prices 
-  where SYMBOL = 'AXL' and 	PROVIDER = 'coin market cap'
-and days   >= current_date - interval ' 1 year '
-group by 1)
-
-select 
-    date_trunc('week', BLOCK_TIMESTAMP)::date AS "Date",
-  count(*) AS TX,
-  sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end) AS "Success TX",
-  ("Success TX"/TX)*100 AS "Success %",
-round((100-"Success %"),2) as failure_rate ,
-round ( 100*("Success %"-lag("Success %",1)over(order by "Date"))/lag("Success %",1)over(order by "Date"),2) as  "Success Rate Change %",
-  from axelar.core.fact_transactions , axl_price
-  where BLOCK_TIMESTAMP::date between current_date - interval ' 1 year ' and current_date -1
-  and BLOCK_TIMESTAMP::date = days
-  group by 1 
-order by 1 desc
+    query = """
+      with axl_price as (
+        select 
+            date(recorded_at) as days,
+            avg(price) as ax_price
+        from osmosis.price.dim_prices 
+        where symbol = 'AXL' and provider = 'coin market cap'
+        and days >= current_date - interval '1 year'
+        group by 1
+      )
+      select 
+          date_trunc('week', BLOCK_TIMESTAMP)::date as "Date",
+          count(*) as TX,
+          sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end) as "Success TX",
+          (sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100 as "Success %",
+          round((100 - (sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100),2) as failure_rate,
+          round(100*(((sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100) - 
+                     lag((sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100,1) over(order by "Date"))/
+                     lag((sum(case when TX_SUCCEEDED!='TRUE' then 0 else 1 end)/count(*))*100,1) over(order by "Date"),2) as "Success Rate Change %"
+      from axelar.core.fact_transactions , axl_price
+      where block_timestamp::date between current_date - interval '1 year' and current_date -1
+        and block_timestamp::date = days
+      group by 1 
+      order by 1 desc
     """
     df = pd.read_sql(query, conn)
     return df
@@ -285,6 +275,7 @@ order by 1 desc
 # === Load Data: Row 3 ========================================================
 df_weekly_tps = load_weekly_tps()
 df_weekly_success_rate = load_weekly_success_rate()
+
 # === Charts: Row 3 ============================================================
 col1, col2 = st.columns(2)
 
@@ -293,8 +284,12 @@ with col1:
     fig1.add_bar(x=df_weekly_tps["Date"], y=df_weekly_tps["TPS"], name="TPS", yaxis="y1", marker_color="blue")
     fig1.add_trace(go.Scatter(x=df_weekly_tps["Date"], y=df_weekly_tps["TPS Change %"], name="TPS Change %", mode="lines", 
                               yaxis="y2", line=dict(color="black")))
-    fig1.update_layout(title="Weekly Average TPS", yaxis=dict(title="Txns count"), yaxis2=dict(title="%", overlaying="y", side="right"), xaxis=dict(title=""),
-        barmode="group", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
+    fig1.update_layout(title="Weekly Average TPS", 
+                       yaxis=dict(title="Txns count"), 
+                       yaxis2=dict(title="%", overlaying="y", side="right"), 
+                       xaxis=dict(title=""),
+                       barmode="group", 
+                       legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
     st.plotly_chart(fig1, use_container_width=True)
 
 with col2:
@@ -302,7 +297,10 @@ with col2:
     fig2.add_bar(x=df_weekly_success_rate["Date"], y=df_weekly_success_rate["Success %"], name="Success %", yaxis="y1", marker_color="blue")
     fig2.add_trace(go.Scatter(x=df_weekly_success_rate["Date"], y=df_weekly_success_rate["Success Rate Change %"], name="Success Rate Change %", mode="lines", 
                               yaxis="y2", line=dict(color="black")))
-    fig2.update_layout(title="Weekly Success Rate", yaxis=dict(title="%"), yaxis2=dict(title="%", 
-                       overlaying="y", side="right"), xaxis=dict(title=""),
-        barmode="group", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
+    fig2.update_layout(title="Weekly Success Rate", 
+                       yaxis=dict(title="%"), 
+                       yaxis2=dict(title="%", overlaying="y", side="right"), 
+                       xaxis=dict(title=""),
+                       barmode="group", 
+                       legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
     st.plotly_chart(fig2, use_container_width=True)
