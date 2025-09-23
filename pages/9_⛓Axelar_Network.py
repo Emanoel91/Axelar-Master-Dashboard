@@ -202,7 +202,7 @@ df_user_stats_success_rate = load_user_stats_success_rate()
 card_style = """
     <div style="
         background-color: #ffffff;
-        border: 1px solid #ffffff;
+        border: 35px solid #ffffff;
         border-radius: 1px;
         padding: 1px;
         text-align: center;
