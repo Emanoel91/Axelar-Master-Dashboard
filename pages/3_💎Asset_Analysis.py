@@ -114,6 +114,7 @@ st.set_page_config(page_title="Axelar Token Dashboard", layout="wide")
 st.title("💎Asset Analysis")
 st.info("📊 Charts initially display data for a default time range. Select a custom range to view results for your desired period.")
 st.info("⏳ On-chain data retrieval may take a few moments. Please wait while the results load.")
+
 # Time filters
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -207,6 +208,11 @@ if not results:
 
 full_df = pd.concat(results, ignore_index=True, sort=False)
 full_df = full_df.set_index("timestamp")
+
+# --- تغییر برای XRP: تقسیم مقادیر بر ۲ ---
+mask_xrp = full_df["token"].str.upper() == "XRP"
+full_df.loc[mask_xrp, ["num_txs", "volume"]] = full_df.loc[mask_xrp, ["num_txs", "volume"]] / 2
+# ------------------------------------------
 
 grouped = (
     full_df
