@@ -1,703 +1,568 @@
 import streamlit as st
 import pandas as pd
 import requests
-import snowflake.connector
 import plotly.graph_objects as go
 import plotly.express as px
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends import default_backend
 
-# --- Page Config: Tab Title & Icon -------------------------------------------------------------------------------------
+# =====================================================
+# PAGE CONFIG
+# =====================================================
 st.set_page_config(
-    page_title="Axelar Master Dashboard",
-    page_icon="https://axelarscan.io/logos/logo.png",
+    page_title="Axelar Dashboard",
+    page_icon="🚀",
     layout="wide"
 )
 
-# --- Sidebar Footer Slightly Left-Aligned ---
+# =====================================================
+# GLOBAL CSS
+# =====================================================
+st.markdown("""
+<style>
+
+/* =========================
+GLOBAL
+========================= */
+
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* =========================
+KPI CARD
+========================= */
+
+.kpi-box {
+
+    background: linear-gradient(
+        145deg,
+        #1c1c1c,
+        #111111
+    );
+
+    border-radius: 18px;
+
+    padding: 22px;
+
+    border: 1px solid rgba(255,255,255,0.05);
+
+    box-shadow:
+        0 4px 15px rgba(0,0,0,0.25);
+
+    transition: all 0.25s ease;
+
+    min-height: 125px;
+}
+
+.kpi-box:hover {
+
+    transform: translateY(-4px);
+
+    border: 1px solid rgba(255,116,0,0.35);
+
+    box-shadow:
+        0 8px 24px rgba(255,116,0,0.15);
+}
+
+.kpi-label {
+
+    font-size: 14px;
+
+    color: #9f9f9f;
+
+    margin-bottom: 12px;
+}
+
+.kpi-value {
+
+    font-size: 34px;
+
+    font-weight: 700;
+
+    color: white;
+
+    line-height: 1.1;
+}
+
+/* =========================
+SIDEBAR FOOTER
+========================= */
+
+.sidebar-footer {
+
+    position: fixed;
+
+    bottom: 20px;
+
+    width: 250px;
+
+    font-size: 13px;
+
+    color: gray;
+
+    margin-left: 5px;
+
+    text-align: left;
+}
+
+.sidebar-footer img {
+
+    width: 16px;
+
+    height: 16px;
+
+    vertical-align: middle;
+
+    border-radius: 50%;
+
+    margin-right: 5px;
+}
+
+.sidebar-footer a {
+
+    color: gray !important;
+
+    text-decoration: none;
+}
+
+/* =========================
+RESPONSIVE
+========================= */
+
+@media (max-width: 1200px) {
+
+    .kpi-value {
+        font-size: 28px;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .kpi-value {
+        font-size: 22px;
+    }
+
+    .kpi-box {
+
+        padding: 18px;
+
+        min-height: 100px;
+    }
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# =====================================================
+# SIDEBAR FOOTER
+# =====================================================
 st.sidebar.markdown(
     """
-    <style>
-    .sidebar-footer {
-        position: fixed;
-        bottom: 20px;
-        width: 250px;
-        font-size: 13px;
-        color: gray;
-        margin-left: 5px; # -- MOVE LEFT
-        text-align: left;  
-    }
-    .sidebar-footer img {
-        width: 16px;
-        height: 16px;
-        vertical-align: middle;
-        border-radius: 50%;
-        margin-right: 5px;
-    }
-    .sidebar-footer a {
-        color: gray;
-        text-decoration: none;
-    }
-    </style>
-
     <div class="sidebar-footer">
+
         <div>
             <a href="https://x.com/axelar" target="_blank">
                 <img src="https://img.cryptorank.io/coins/axelar1663924228506.png" alt="Axelar Logo">
                 Powered by Axelar
             </a>
         </div>
+
         <div style="margin-top: 5px;">
             <a href="https://x.com/0xeman_raz" target="_blank">
                 <img src="https://pbs.twimg.com/profile_images/1841479747332608000/bindDGZQ_400x400.jpg" alt="Eman Raz">
                 Built by Eman Raz
             </a>
         </div>
+
     </div>
     """,
     unsafe_allow_html=True
 )
 
-# --- Title & Info Messages ---------------------------------------------------------------------------------------------
-st.title("🚀GMP & Token Transfers")
+# =====================================================
+# TITLE
+# =====================================================
+st.title("🚀 Interchain Analysis")
 
-st.info("📊 Charts initially display data for a default time range. Select a custom range to view results for your desired period.")
-st.info("⏳ On-chain data retrieval may take a few moments. Please wait while the results load.")
-
-# --- Snowflake Connection ----------------------------------------------------------------------------------------
-snowflake_secrets = st.secrets["snowflake"]
-user = snowflake_secrets["user"]
-account = snowflake_secrets["account"]
-private_key_str = snowflake_secrets["private_key"]
-warehouse = snowflake_secrets.get("warehouse", "")
-database = snowflake_secrets.get("database", "")
-schema = snowflake_secrets.get("schema", "")
-
-private_key_pem = f"-----BEGIN PRIVATE KEY-----\n{private_key_str}\n-----END PRIVATE KEY-----".encode("utf-8")
-private_key = serialization.load_pem_private_key(
-    private_key_pem,
-    password=None,
-    backend=default_backend()
-)
-private_key_bytes = private_key.private_bytes(
-    encoding=serialization.Encoding.DER,
-    format=serialization.PrivateFormat.PKCS8,
-    encryption_algorithm=serialization.NoEncryption()
+st.info(
+    "All data is loaded from Axelar public API (no database required)."
 )
 
-conn = snowflake.connector.connect(
-    user=user,
-    account=account,
-    private_key=private_key_bytes,
-    warehouse=warehouse,
-    database=database,
-    schema=schema
-)
-
-# --- Time Frame & Period Selection --------------------------------------------------------------------------------------
-col1, col2, col3 = st.columns(3)
-with col1:
-    timeframe = st.selectbox("Select Time Frame", ["month", "week", "day"])
-with col2:
-    start_date = st.date_input("Start Date", value=pd.to_datetime("2022-01-01"))
-with col3:
-    end_date = st.date_input("End Date", value=pd.to_datetime("2025-09-30"))
-
-st.markdown(
-    """
-    <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
-        <h2 style="color:#000000; text-align:center;">Axelar Cross-Chain Transfers Overview</h2>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-st.markdown("<br>", unsafe_allow_html=True)
-# --- Fetch Data from API --------------------------------------------------------------------------------------------
+# =====================================================
+# LOAD DATA
+# =====================================================
 @st.cache_data
 def load_data():
+
     url = "https://api.axelarscan.io/api/interchainChart"
-    response = requests.get(url)
-    json_data = response.json()
-    df = pd.DataFrame(json_data['data'])
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+
+    r = requests.get(url, timeout=30)
+
+    data = r.json()["data"]
+
+    df = pd.DataFrame(data)
+
+    df["timestamp"] = pd.to_datetime(
+        df["timestamp"],
+        unit="ms"
+    )
+
     return df
+
 
 df = load_data()
 
-# --- Filter by date range ------------------------------------------------------------------------------------------
-df = df[(df['timestamp'] >= pd.to_datetime(start_date)) & (df['timestamp'] <= pd.to_datetime(end_date))]
+# =====================================================
+# FILTERS
+# =====================================================
+col1, col2, col3 = st.columns(3)
 
-# --- Resample data based on timeframe ------------------------------------------------------------------------------
+with col1:
+
+    timeframe = st.selectbox(
+        "Timeframe",
+        ["month", "week", "day"]
+    )
+
+with col2:
+
+    start_date = st.date_input(
+        "Start Date",
+        pd.to_datetime("2025-01-01")
+    )
+
+with col3:
+
+    end_date = st.date_input(
+        "End Date",
+        pd.to_datetime("2027-01-01")
+    )
+
+# =====================================================
+# FILTER DATA
+# =====================================================
+df = df[
+    (df["timestamp"] >= pd.to_datetime(start_date)) &
+    (df["timestamp"] <= pd.to_datetime(end_date))
+]
+
+# =====================================================
+# RESAMPLE
+# =====================================================
 if timeframe == "week":
-    df['period'] = df['timestamp'].dt.to_period('W').apply(lambda r: r.start_time)
+
+    df["period"] = (
+        df["timestamp"]
+        .dt.to_period("W")
+        .apply(lambda r: r.start_time)
+    )
+
 elif timeframe == "month":
-    df['period'] = df['timestamp'].dt.to_period('M').apply(lambda r: r.start_time)
+
+    df["period"] = (
+        df["timestamp"]
+        .dt.to_period("M")
+        .apply(lambda r: r.start_time)
+    )
+
 else:
-    df['period'] = df['timestamp']
 
-grouped = df.groupby('period').agg({
-    'gmp_num_txs': 'sum',
-    'gmp_volume': 'sum',
-    'transfers_num_txs': 'sum',
-    'transfers_volume': 'sum'
-}).reset_index()
+    df["period"] = df["timestamp"]
 
-grouped['total_txs'] = grouped['gmp_num_txs'] + grouped['transfers_num_txs']
-grouped['total_volume'] = grouped['gmp_volume'] + grouped['transfers_volume']
+grouped = (
+    df.groupby("period")
+    .sum(numeric_only=True)
+    .reset_index()
+)
 
-# --- Row 1, 2 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# === Number of Unique Chains ===========================
-@st.cache_data
-def load_unique_chains_stats(start_date, end_date):
-    
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
+grouped["total_txs"] = (
+    grouped["gmp_num_txs"] +
+    grouped["transfers_num_txs"]
+)
 
-    query = f"""
-    WITH axelar_service AS (
-  
-  SELECT LOWER(data:send:original_source_chain) AS chain, 
-  FROM axelar.axelscan.fact_transfers
-  WHERE status = 'executed' AND simplified_status = 'received'
-    
-  UNION ALL
+grouped["total_volume"] = (
+    grouped["gmp_volume"] +
+    grouped["transfers_volume"]
+)
 
-  SELECT LOWER(data:send:original_destination_chain) AS chain
-  FROM axelar.axelscan.fact_transfers
-  WHERE status = 'executed' AND simplified_status = 'received'
+# =====================================================
+# DAILY / WEEKLY STATS
+# =====================================================
+daily_df = df.copy()
 
-  union all
+daily_df["day"] = daily_df["timestamp"].dt.date
 
-  SELECT  LOWER(data:call.chain::STRING) AS chain
-  FROM axelar.axelscan.fact_gmp 
-  WHERE status = 'executed' AND simplified_status = 'received'
+daily_grouped = (
+    daily_df.groupby("day")
+    .sum(numeric_only=True)
+    .reset_index()
+)
 
-  union all 
+daily_grouped["daily_volume"] = (
+    daily_grouped["gmp_volume"] +
+    daily_grouped["transfers_volume"]
+)
 
-  SELECT LOWER(data:call.returnValues.destinationChain::STRING) AS chain
-  FROM axelar.axelscan.fact_gmp 
-  WHERE status = 'executed' AND simplified_status = 'received')
+daily_grouped["daily_txs"] = (
+    daily_grouped["gmp_num_txs"] +
+    daily_grouped["transfers_num_txs"]
+)
 
-SELECT count(distinct chain)-1 as "Unique Chains"
-FROM axelar_service
-where chain is not null
-    """
-    df = pd.read_sql(query, conn)
-    return df
+avg_daily_volume = daily_grouped["daily_volume"].mean()
 
-# === Axelar Cross-chain Stats =====================
-@st.cache_data
-def load_crosschain_stats(start_date, end_date):
-    
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
+avg_daily_txs = daily_grouped["daily_txs"].mean()
 
-    query = f"""
-    WITH axelar_service AS (
-  SELECT 
-    created_at, 
-    LOWER(data:send:original_source_chain) AS source_chain, 
-    LOWER(data:send:original_destination_chain) AS destination_chain,
-    sender_address AS user, case 
-      WHEN IS_ARRAY(data:send:fee_value) THEN NULL
-      WHEN IS_OBJECT(data:send:fee_value) THEN NULL
-      WHEN TRY_TO_DOUBLE(data:send:fee_value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:fee_value::STRING)
-      ELSE NULL END AS fee
-  FROM axelar.axelscan.fact_transfers
-  WHERE status = 'executed' AND simplified_status = 'received'
+weekly_df = df.copy()
 
-  UNION ALL
+weekly_df["week"] = (
+    weekly_df["timestamp"]
+    .dt.to_period("W")
+    .apply(lambda r: r.start_time)
+)
 
-  SELECT  
-    created_at,
-    LOWER(data:call.chain::STRING) AS source_chain,
-    LOWER(data:call.returnValues.destinationChain::STRING) AS destination_chain,
-    data:call.transaction.from::STRING AS user, COALESCE( CASE 
-        WHEN IS_ARRAY(data:gas:gas_used_amount) OR IS_OBJECT(data:gas:gas_used_amount) 
-          OR IS_ARRAY(data:gas_price_rate:source_token.token_price.usd) OR    IS_OBJECT(data:gas_price_rate:source_token.token_price.usd) 
-        THEN NULL
-        WHEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) IS NOT NULL 
-          AND TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING) IS NOT NULL 
-        THEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) * TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING)
-        ELSE NULL END, CASE 
-        WHEN IS_ARRAY(data:fees:express_fee_usd) OR IS_OBJECT(data:fees:express_fee_usd) THEN NULL
-        WHEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING)
-        ELSE NULL END) AS fee
-  FROM axelar.axelscan.fact_gmp 
-  WHERE status = 'executed' AND simplified_status = 'received')
+weekly_grouped = (
+    weekly_df.groupby("week")
+    .sum(numeric_only=True)
+    .reset_index()
+)
 
-SELECT count(distinct user) as "Number of Users", round(sum(fee)) as "Total Gas Fees",
-count(distinct (source_chain || '➡' || destination_chain)) as "Unique Paths",
-round(avg(fee),2) as "Avg Gas Fee", round(median(fee),2) as "Median Gas Fee"
-from axelar_service
-where created_at::date>='{start_str}' and created_at::date<='{end_str}'
-    """
-    df = pd.read_sql(query, conn)
-    return df
+weekly_grouped["weekly_volume"] = (
+    weekly_grouped["gmp_volume"] +
+    weekly_grouped["transfers_volume"]
+)
 
-# === Load Kpi =====================================
-df_unique_chains_stats = load_unique_chains_stats(start_date, end_date)
-df_crosschain_stats = load_crosschain_stats(start_date, end_date)
-# --- KPI Section ---------------------------------------------------------------------------------------------------
-card_style = """
-    <div style="
-        background-color: #f9f9f9;
-        border: 1px solid #e0e0e0;
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
-        ">
-        <h4 style="margin: 0; font-size: 20px; color: #555;">{label}</h4>
-        <p style="margin: 5px 0 0; font-size: 20px; font-weight: bold; color: #000;">{value}</p>
-    </div>
-"""
+weekly_grouped["weekly_txs"] = (
+    weekly_grouped["gmp_num_txs"] +
+    weekly_grouped["transfers_num_txs"]
+)
 
-total_num_txs = grouped['gmp_num_txs'].sum() + grouped['transfers_num_txs'].sum()
-total_volume = grouped['gmp_volume'].sum() + grouped['transfers_volume'].sum()
+avg_weekly_volume = weekly_grouped["weekly_volume"].mean()
 
+avg_weekly_txs = weekly_grouped["weekly_txs"].mean()
+
+# =====================================================
+# KPI FUNCTION
+# =====================================================
+def kpi(label, value):
+
+    st.markdown(
+        f"""
+        <div class="kpi-box">
+            <div class="kpi-label">{label}</div>
+            <div class="kpi-value">{value}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# =====================================================
+# KPI ROW 1
+# =====================================================
 col1, col2, col3 = st.columns(3)
-with col1:
-    st.markdown(card_style.format(label="🚀Number of Transfers", value=f"{total_num_txs:,} Txns"), unsafe_allow_html=True)
-with col2:
-    st.markdown(card_style.format(label="💸Volume of Transfers", value=f"${total_volume:,.0f}"), unsafe_allow_html=True)
-with col3:
-    st.markdown(card_style.format(label="👥Number of Unique Users", value=f"{df_crosschain_stats['Number of Users'][0]:,} Wallets"), unsafe_allow_html=True)
 
+with col1:
+
+    kpi(
+        "Total Transactions",
+        f"{grouped['total_txs'].sum():,}"
+    )
+
+with col2:
+
+    kpi(
+        "Total Volume",
+        f"${grouped['total_volume'].sum():,.0f}"
+    )
+
+with col3:
+
+    avg_volume_per_tx = (
+        grouped["total_volume"].sum() /
+        max(grouped["total_txs"].sum(), 1)
+    )
+
+    kpi(
+        "Avg Volume / Tx",
+        f"${avg_volume_per_tx:,.2f}"
+    )
+
+# =====================================================
+# SPACING
+# =====================================================
 st.markdown("<br>", unsafe_allow_html=True)
 
-col4, col5, col6 = st.columns(3)
+# =====================================================
+# KPI ROW 2
+# =====================================================
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+
+    kpi(
+        "Avg Daily Volume",
+        f"${avg_daily_volume:,.0f}"
+    )
+
+with col2:
+
+    kpi(
+        "Avg Weekly Volume",
+        f"${avg_weekly_volume:,.0f}"
+    )
+
+with col3:
+
+    kpi(
+        "Avg Daily Transactions",
+        f"{avg_daily_txs:,.0f}"
+    )
+
 with col4:
-    st.markdown(card_style.format(label="⛓Supported Chains", value=f"{df_unique_chains_stats['Unique Chains'][0]:,}"), unsafe_allow_html=True)
-with col5:
-    st.markdown(card_style.format(label="🔀Number of Paths", value=f"{df_crosschain_stats['Unique Paths'][0]:,}"), unsafe_allow_html=True)
-with col6:
-    st.markdown(card_style.format(label="⛽Total Gas Fees", value=f"${df_crosschain_stats['Total Gas Fees'][0]:,}"), unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
-st.markdown(
-    """
-    <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
-        <h2 style="color:#000000; text-align:center;">Analysis of Cross-Chain Transfers By Service</h2>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    kpi(
+        "Avg Weekly Transactions",
+        f"{avg_weekly_txs:,.0f}"
+    )
 
-# --- Row 3: Transactions Over Time -------------------------------------------------------------------------------------------------------------------------------------------
-fig1 = go.Figure()
-fig1.add_trace(go.Bar(x=grouped['period'], y=grouped['gmp_num_txs'], name='GMP', marker_color='#ff7400'))
-fig1.add_trace(go.Bar(x=grouped['period'], y=grouped['transfers_num_txs'], name='Token Transfers', marker_color='#00a1f7'))
-fig1.add_trace(go.Scatter(x=grouped['period'], y=grouped['total_txs'], name='Total', mode='lines', marker_color='black'))
-fig1.update_layout(barmode='stack', title="Number of Transfers by Service Over Time", yaxis=dict(title="Txns count"), 
-                   legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
+# =====================================================
+# COLORS
+# =====================================================
+GMP_COLOR = "#ff7400"
 
-fig2 = go.Figure()
-fig2.add_trace(go.Bar(x=grouped['period'], y=grouped['gmp_volume'], name='GMP', marker_color='#ff7400'))
-fig2.add_trace(go.Bar(x=grouped['period'], y=grouped['transfers_volume'], name='Token Transfers', marker_color='#00a1f7'))
-fig2.add_trace(go.Scatter(x=grouped['period'], y=grouped['total_volume'], name='Total', mode='lines', marker_color='black'))
-fig2.update_layout(barmode='stack', title="Volume of Transfers by Service Over Time", yaxis=dict(title="$USD"), 
-                   legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
+TRANSFER_COLOR = "#00a1f7"
 
+# =====================================================
+# CHARTS ROW 1
+# =====================================================
 col1, col2 = st.columns(2)
 
 with col1:
-    st.plotly_chart(fig1, use_container_width=True)
+
+    fig1 = go.Figure()
+
+    fig1.add_bar(
+        x=grouped["period"],
+        y=grouped["gmp_num_txs"],
+        name="GMP",
+        marker_color=GMP_COLOR
+    )
+
+    fig1.add_bar(
+        x=grouped["period"],
+        y=grouped["transfers_num_txs"],
+        name="Transfers",
+        marker_color=TRANSFER_COLOR
+    )
+
+    fig1.update_layout(
+        title="Transactions Over Time",
+        barmode="stack",
+        template="plotly_dark",
+        height=450
+    )
+
+    st.plotly_chart(
+        fig1,
+        use_container_width=True
+    )
 
 with col2:
-    st.plotly_chart(fig2, use_container_width=True)
 
-# --- Row 4 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-@st.cache_data
-def load_stats_overtime(timeframe, start_date, end_date):
-    
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
+    fig2 = go.Figure()
 
-    query = f"""
-    WITH axelar_service AS (
-  SELECT 
-    created_at, 
-    LOWER(data:send:original_source_chain) AS source_chain, 
-    LOWER(data:send:original_destination_chain) AS destination_chain,
-    sender_address AS user, case 
-      WHEN IS_ARRAY(data:send:fee_value) THEN NULL
-      WHEN IS_OBJECT(data:send:fee_value) THEN NULL
-      WHEN TRY_TO_DOUBLE(data:send:fee_value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:fee_value::STRING)
-      ELSE NULL END AS fee, 'Token Transfers' as "Service"
-  FROM axelar.axelscan.fact_transfers
-  WHERE status = 'executed' AND simplified_status = 'received'
+    fig2.add_bar(
+        x=grouped["period"],
+        y=grouped["gmp_volume"],
+        name="GMP",
+        marker_color=GMP_COLOR
+    )
 
-  UNION ALL
+    fig2.add_bar(
+        x=grouped["period"],
+        y=grouped["transfers_volume"],
+        name="Transfers",
+        marker_color=TRANSFER_COLOR
+    )
 
-  SELECT  
-    created_at,
-    LOWER(data:call.chain::STRING) AS source_chain,
-    LOWER(data:call.returnValues.destinationChain::STRING) AS destination_chain,
-    data:call.transaction.from::STRING AS user, COALESCE( CASE 
-        WHEN IS_ARRAY(data:gas:gas_used_amount) OR IS_OBJECT(data:gas:gas_used_amount) 
-          OR IS_ARRAY(data:gas_price_rate:source_token.token_price.usd) OR    IS_OBJECT(data:gas_price_rate:source_token.token_price.usd) 
-        THEN NULL
-        WHEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) IS NOT NULL 
-          AND TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING) IS NOT NULL 
-        THEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) * TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING)
-        ELSE NULL END, CASE 
-        WHEN IS_ARRAY(data:fees:express_fee_usd) OR IS_OBJECT(data:fees:express_fee_usd) THEN NULL
-        WHEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING)
-        ELSE NULL END) AS fee, 'GMP' as "Service"
-  FROM axelar.axelscan.fact_gmp 
-  WHERE status = 'executed' AND simplified_status = 'received')
+    fig2.update_layout(
+        title="Volume Over Time",
+        barmode="stack",
+        template="plotly_dark",
+        height=450
+    )
 
-SELECT date_trunc('{timeframe}',created_at) as "Date", "Service", count(distinct user) as "Number of Users", 
-round(sum(fee)) as "Total Gas Fees", count(distinct (source_chain || '➡' || destination_chain)) as "Unique Paths"
-FROM axelar_service
-where created_at::date>='{start_str}' and created_at::date<='{end_str}'
-group by 1, 2
-order by 1
+    st.plotly_chart(
+        fig2,
+        use_container_width=True
+    )
 
-    """
-    df = pd.read_sql(query, conn)
-    return df
-
-# === Load Data ========================================================
-df_stats_overtime = load_stats_overtime(timeframe, start_date, end_date)
-# === Charts: Row 4 ====================================================
-color_map = {
-    "Token Transfers": "#00a1f7",
-    "GMP": "#ff7400"
-}
-
+# =====================================================
+# DONUT CHARTS
+# =====================================================
 col1, col2 = st.columns(2)
 
 with col1:
-    fig_stacked_fee = px.bar(df_stats_overtime, x="Date", y="Total Gas Fees", color="Service", title="Transfer Gas Fees by Service Over Time", color_discrete_map=color_map)
-    fig_stacked_fee.update_layout(barmode="stack", yaxis_title="$USD", xaxis_title="", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5, title=""))
-    st.plotly_chart(fig_stacked_fee, use_container_width=True)
+
+    tx_df = pd.DataFrame({
+        "Service": ["GMP", "Transfers"],
+        "Value": [
+            grouped["gmp_num_txs"].sum(),
+            grouped["transfers_num_txs"].sum()
+        ]
+    })
+
+    fig3 = px.pie(
+        tx_df,
+        names="Service",
+        values="Value",
+        hole=0.55,
+        title="Transactions Share",
+        color="Service",
+        color_discrete_map={
+            "GMP": GMP_COLOR,
+            "Transfers": TRANSFER_COLOR
+        }
+    )
+
+    fig3.update_layout(
+        template="plotly_dark",
+        height=420
+    )
+
+    st.plotly_chart(
+        fig3,
+        use_container_width=True
+    )
 
 with col2:
-    fig_grouped_user = px.bar(df_stats_overtime, x="Date", y="Number of Users", color="Service", barmode="group", 
-                              title="Number of Active Users by Service Over Time", color_discrete_map=color_map)
-    fig_grouped_user.update_layout(yaxis_title="Wallet count", xaxis_title="", legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5, title=""))
-    st.plotly_chart(fig_grouped_user, use_container_width=True)
 
-# --- Row 5 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# == %Transaction count ====================================================================
-df_norm_tx = grouped.copy()
-df_norm_tx['gmp_norm'] = df_norm_tx['gmp_num_txs'] / df_norm_tx['total_txs']
-df_norm_tx['transfers_norm'] = df_norm_tx['transfers_num_txs'] / df_norm_tx['total_txs']
+    vol_df = pd.DataFrame({
+        "Service": ["GMP", "Transfers"],
+        "Value": [
+            grouped["gmp_volume"].sum(),
+            grouped["transfers_volume"].sum()
+        ]
+    })
 
-fig3 = go.Figure()
-fig3.add_trace(go.Bar(x=df_norm_tx['period'], y=df_norm_tx['gmp_norm'], name='GMP', marker_color='#ff7400'))
-fig3.add_trace(go.Bar(x=df_norm_tx['period'], y=df_norm_tx['transfers_norm'], name='Token Transfers', marker_color='#00a1f7'))
-fig3.update_layout(barmode='stack', title="Normalized Transactions Over Time", yaxis_tickformat='%',
-                   legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
-# === %volume ==============================================================================
-df_norm_vol = grouped.copy()
-df_norm_vol['gmp_norm'] = df_norm_vol['gmp_volume'] / df_norm_vol['total_volume']
-df_norm_vol['transfers_norm'] = df_norm_vol['transfers_volume'] / df_norm_vol['total_volume']
+    fig4 = px.pie(
+        vol_df,
+        names="Service",
+        values="Value",
+        hole=0.55,
+        title="Volume Share",
+        color="Service",
+        color_discrete_map={
+            "GMP": GMP_COLOR,
+            "Transfers": TRANSFER_COLOR
+        }
+    )
 
-fig4 = go.Figure()
-fig4.add_trace(go.Bar(x=df_norm_vol['period'], y=df_norm_vol['gmp_norm'], name='GMP', marker_color='#ff7400'))
-fig4.add_trace(go.Bar(x=df_norm_vol['period'], y=df_norm_vol['transfers_norm'], name='Token Transfers', marker_color='#00a1f7'))
-fig4.update_layout(barmode='stack', title="Normalized Volume Over Time", yaxis_tickformat='%', 
-                   legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5))
-# === %User ======================================================================================
-df_norm = df_stats_overtime.copy()
-df_norm['total_per_date'] = df_norm.groupby("Date")["Number of Users"].transform('sum')
-df_norm['normalized'] = df_norm["Number of Users"] / df_norm['total_per_date']
+    fig4.update_layout(
+        template="plotly_dark",
+        height=420
+    )
 
-fig5 = go.Figure()
-
-for service in df_norm["Service"].unique():
-    df_service = df_norm[df_norm["Service"] == service]
-    fig5.add_trace(go.Bar(x=df_service["Date"], y=df_service["normalized"], name=service, text=df_service["Number of Users"].astype(str),
-            marker_color=color_map.get(service, None)))
-fig5.update_layout(barmode='stack', title="Normalized Users Over Time", xaxis_title="", yaxis=dict(tickformat='%'), legend=dict(
-        orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, title=""))
-fig5.update_traces(textposition='inside')
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.plotly_chart(fig3, use_container_width=True)
-
-with col2:
-    st.plotly_chart(fig4, use_container_width=True)
-
-with col3:
-    st.plotly_chart(fig5, use_container_width=True)
-
-# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------    
-@st.cache_data
-def load_stats_chain_fee_user_path(start_date, end_date):
-    
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
-
-    query = f"""
-    WITH axelar_service AS (
-  SELECT 
-    created_at, 
-    LOWER(data:send:original_source_chain) AS source_chain, 
-    LOWER(data:send:original_destination_chain) AS destination_chain,
-    sender_address AS user, case 
-      WHEN IS_ARRAY(data:send:fee_value) THEN NULL
-      WHEN IS_OBJECT(data:send:fee_value) THEN NULL
-      WHEN TRY_TO_DOUBLE(data:send:fee_value::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:send:fee_value::STRING)
-      ELSE NULL END AS fee, 'Token Transfers' as "Service"
-  FROM axelar.axelscan.fact_transfers
-  WHERE status = 'executed' AND simplified_status = 'received'
-  UNION ALL
-  SELECT  
-    created_at,
-    LOWER(data:call.chain::STRING) AS source_chain,
-    LOWER(data:call.returnValues.destinationChain::STRING) AS destination_chain,
-    data:call.transaction.from::STRING AS user, COALESCE( CASE 
-        WHEN IS_ARRAY(data:gas:gas_used_amount) OR IS_OBJECT(data:gas:gas_used_amount) 
-          OR IS_ARRAY(data:gas_price_rate:source_token.token_price.usd) OR    IS_OBJECT(data:gas_price_rate:source_token.token_price.usd) 
-        THEN NULL
-        WHEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) IS NOT NULL 
-          AND TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING) IS NOT NULL 
-        THEN TRY_TO_DOUBLE(data:gas:gas_used_amount::STRING) * TRY_TO_DOUBLE(data:gas_price_rate:source_token.token_price.usd::STRING)
-        ELSE NULL END, CASE 
-        WHEN IS_ARRAY(data:fees:express_fee_usd) OR IS_OBJECT(data:fees:express_fee_usd) THEN NULL
-        WHEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING) IS NOT NULL THEN TRY_TO_DOUBLE(data:fees:express_fee_usd::STRING)
-        ELSE NULL END) AS fee, 'GMP' as "Service"
-  FROM axelar.axelscan.fact_gmp 
-  WHERE status = 'executed' AND simplified_status = 'received')
-
-SELECT "Service", count(distinct user) as "Number of Users", 
-round(sum(fee)) as "Total Gas Fees", count(distinct (source_chain || '➡' || destination_chain)) as "Unique Paths"
-FROM axelar_service
-where created_at::date>='{start_str}' and created_at::date<='{end_str}'
-group by 1
-    """
-    df = pd.read_sql(query, conn)
-    return df
-
-# === Load Data ===================================================================
-df_stats_chain_fee_user_path = load_stats_chain_fee_user_path(start_date, end_date)
-  
-# --- Row 6: Donut Charts -------------------------------------------------------------------------------------------------------------------------------------------------------
-total_gmp_tx = grouped['gmp_num_txs'].sum()
-total_transfers_tx = grouped['transfers_num_txs'].sum()
-
-total_gmp_vol = grouped['gmp_volume'].sum()
-total_transfers_vol = grouped['transfers_volume'].sum()
-
-tx_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Count": [total_gmp_tx, total_transfers_tx]})
-donut_tx = px.pie(tx_df, names="Service", values="Count", color="Service", hole=0.5, title="Total Transactions by Service", color_discrete_map={
-        "GMP": "#ff7400",
-        "Token Transfers": "#00a1f7"
-    }
-)
-donut_tx.update_traces(textinfo='label+percent', showlegend=False)
-
-vol_df = pd.DataFrame({"Service": ["GMP", "Token Transfers"], "Volume": [total_gmp_vol, total_transfers_vol]})
-donut_vol = px.pie(vol_df, names="Service", values="Volume", color="Service", hole=0.5, title="Total Volume by Service", color_discrete_map={
-        "GMP": "#ff7400",
-        "Token Transfers": "#00a1f7"
-    }
-)
-donut_vol.update_traces(textinfo='label+percent', showlegend=False)
-
-# ------------------------
-fig_stacked_fee = px.bar(df_stats_chain_fee_user_path, x="Service", y="Total Gas Fees", color="Service", title="Total Gas Fees by Service", color_discrete_map=color_map)
-fig_stacked_fee.update_layout(barmode="stack", yaxis_title="$USD", xaxis_title="")
-fig_stacked_fee.update_traces(text=df_stats_chain_fee_user_path["Total Gas Fees"], texttemplate='%{text}', textposition='inside', showlegend=False) 
-# ------------------------
-fig_stacked_user = px.bar(df_stats_chain_fee_user_path, x="Service", y="Number of Users", color="Service", title="Total Number of Users by Service", color_discrete_map=color_map)
-fig_stacked_user.update_layout(barmode="stack", yaxis_title="wallet count", xaxis_title="")
-fig_stacked_user.update_traces(text=df_stats_chain_fee_user_path["Number of Users"], texttemplate='%{text}', textposition='inside', showlegend=False)    
-
-col5, col6, col7, col8 = st.columns(4)
-col5.plotly_chart(donut_tx, use_container_width=True)
-col6.plotly_chart(donut_vol, use_container_width=True)
-col7.plotly_chart(fig_stacked_fee, use_container_width=True)
-col8.plotly_chart(fig_stacked_user, use_container_width=True)   
-
-st.markdown(
-    """
-    <div style="background-color:#ff7f27; padding:1px; border-radius:10px;">
-        <h2 style="color:#000000; text-align:center;">Analysis of Cross-Chain Transfers By Path Type</h2>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-st.markdown("<br>", unsafe_allow_html=True)
-
-# --- Row 7 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
-@st.cache_data
-def load_transfers_path_type(timeframe, start_date, end_date):
-    
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
-
-    query = f"""
-    with axelar_services as (
-
-select created_at, data:value as amount, id,
-(data:call:chain_type) || '' ||  destination_chain_type as "Path Type",
-'GMP' as "Service"
-from axelar.axelscan.fact_gmp
-where simplified_status = 'received' and created_at::date>='{start_str}' and created_at::date<='{end_str}'
-
-union all
-
-select created_at, (data:send:amount * data:link:price) as amount, id, 
-data:time_spent:source_chain_type || '➡' || data:time_spent:destination_chain_type as "Path Type",
-'Token Transfers' as "Service"
-from axelar.axelscan.fact_transfers
-where 
-(data:send:amount) <> ''
-and (data:link:price) <> ''
-and (data:link:price) <> '[]'
-and (data:send:amount * data:link:price) <= 20000000
-and simplified_status = 'received'
-and created_at::date>='{start_str}' and created_at::date<='{end_str}'
-)
-
-select date_trunc('{timeframe}',created_at) as "Date", count(distinct id) as "Transfers Count",
-round(sum(amount),2) as "Transfers Volume", case 
-when "Path Type"='evm➡cosmos' then 'evm➡ibc'
-when "Path Type"='vmvm' then 'evm➡evm'
-when "Path Type"='vmevm' then 'evm➡evm'
-when "Path Type"='axelarnet➡cosmos' then 'axelarnet➡ibc'
-when "Path Type"='cosmos➡cosmos' then 'ibc➡ibc'
-when "Path Type"='cosmos➡axelarnet' then 'ibc➡axelarnet'
-when "Path Type"='cosmosevm' then 'ibc➡evm'
-when "Path Type"='evmcosmos' then 'evm➡ibc'
-when "Path Type"='cosmos➡evm' then 'ibc➡evm'
-when "Path Type"='evmevm' then 'evm➡evm'
-when "Path Type"='cosmoscosmos' then 'ibc➡ibc'
-when "Path Type" is null then 'Not Labeled'
-else "Path Type" end as "Path_Type"
-from axelar_services
-group by 1,4
-order by 1
-    """
-    df = pd.read_sql(query, conn)
-    return df
-    
-# === Load Data ==================================================================
-df_transfers_path_type = load_transfers_path_type(timeframe, start_date, end_date)
-# === Charts: Row 7 ==============================================================
-df_norm = df_transfers_path_type.copy()
-df_norm['total_per_date'] = df_norm.groupby("Date")["Transfers Volume"].transform('sum')
-df_norm['normalized'] = df_norm["Transfers Volume"] / df_norm['total_per_date']
-
-fig1 = go.Figure()
-for Path_Type in df_norm["Path_Type"].unique():
-    df_path_type_volume = df_norm[df_norm["Path_Type"] == Path_Type]
-    fig1.add_trace(go.Bar(x=df_path_type_volume["Date"], y=df_path_type_volume["normalized"], name=Path_Type, text=df_path_type_volume["Transfers Volume"].astype(str),
-            marker_color=color_map.get(Path_Type, None)))
-fig1.update_layout(barmode='stack', title="Volume of Cross-Chain Transfers by Path Type (%Normalized)", xaxis_title="", yaxis=dict(tickformat='%'))
-fig1.update_traces(textposition='inside')
-
-# ------------------
-df_norm = df_transfers_path_type.copy()
-df_norm['total_per_date'] = df_norm.groupby("Date")["Transfers Count"].transform('sum')
-df_norm['normalized'] = df_norm["Transfers Count"] / df_norm['total_per_date']
-
-fig2 = go.Figure()
-for Path_Type in df_norm["Path_Type"].unique():
-    df_path_type_txn = df_norm[df_norm["Path_Type"] == Path_Type]
-    fig2.add_trace(go.Bar(x=df_path_type_txn["Date"], y=df_path_type_txn["normalized"], name=Path_Type, text=df_path_type_txn["Transfers Count"].astype(str),
-            marker_color=color_map.get(Path_Type, None)))
-fig2.update_layout(barmode='stack', title="Number of Cross-Chain Transfers by Path Type (%Normalized)", xaxis_title="", yaxis=dict(tickformat='%'))
-fig2.update_traces(textposition='inside')
-
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.plotly_chart(fig1, use_container_width=True)
-
-with col2:
-    st.plotly_chart(fig2, use_container_width=True)
-
-# --- Row 8 ----------------------------------------------------------------------------------------------------------------------------------------------------------
-@st.cache_data
-def load_path_type_stats(start_date, end_date):
-    
-    start_str = start_date.strftime("%Y-%m-%d")
-    end_str = end_date.strftime("%Y-%m-%d")
-
-    query = f"""
-    with axelar_services as (
-
-select created_at, data:value as amount, id, to_varchar(data:call:transaction:from) as user,
-(data:call:chain_type) || '' ||  destination_chain_type as "Path Type",
-'GMP' as "Service"
-from axelar.axelscan.fact_gmp
-where simplified_status = 'received'
-and created_at>='{start_str}' and created_at::date<='{end_str}'
-
-union all
-
-select created_at, (data:send:amount * data:link:price) as amount, id, sender_address as user,
-data:time_spent:source_chain_type || '➡' || data:time_spent:destination_chain_type as "Path Type",
-'Token Transfers' as "Service"
-from axelar.axelscan.fact_transfers
-where 
-(data:send:amount) <> ''
-and (data:link:price) <> ''
-and (data:link:price) <> '[]'
-and (data:send:amount * data:link:price) <= 20000000
-and simplified_status = 'received'
-and created_at>='{start_str}' and created_at::date<='{end_str}'
-)
-
-select count(distinct user) as "Number of Users", count(distinct id) as "Number of Transfers",
-round(sum(amount),1) as "Volume of Transfers", case 
-when "Path Type"='evm➡cosmos' then 'evm➡ibc'
-when "Path Type"='vmvm' then 'evm➡evm'
-when "Path Type"='vmevm' then 'evm➡evm'
-when "Path Type"='axelarnet➡cosmos' then 'axelarnet➡ibc'
-when "Path Type"='cosmos➡cosmos' then 'ibc➡ibc'
-when "Path Type"='cosmos➡axelarnet' then 'ibc➡axelarnet'
-when "Path Type"='cosmosevm' then 'ibc➡evm'
-when "Path Type"='evmcosmos' then 'evm➡ibc'
-when "Path Type"='cosmos➡evm' then 'ibc➡evm'
-when "Path Type"='evmevm' then 'evm➡evm'
-when "Path Type"='cosmoscosmos' then 'ibc➡ibc'
-when "Path Type"='vmcosmos' then 'vm➡ibc'
-when "Path Type"='cosmosvm' then 'ibc➡vm'
-when "Path Type"='evmvm' then 'evm➡vm'
-when "Path Type" is null then 'Not Labeled'
-else "Path Type" end as "Path Type"
-from axelar_services
-group by 4
-order by 2 desc 
-    """
-    df = pd.read_sql(query, conn)
-    return df
-
-
-    
-# === Load Data ==================================================================
-df_path_type_stats = load_path_type_stats(start_date, end_date)
-# === Charts: Row 8 ==============================================================
-
-fig_donut_volume = px.pie(df_path_type_stats, names="Path Type", values="Volume of Transfers", title="Total Volume of Transfers By Path Type", hole=0.5, color="Path Type")
-fig_donut_volume.update_traces(textposition='inside', textinfo='percent+label', pull=[0.05]*len(df_path_type_stats))
-fig_donut_volume.update_layout(showlegend=True, legend=dict(orientation="v", y=0.5, x=1.1))
-
-fig_donut_txn = px.pie(df_path_type_stats, names="Path Type", values="Number of Transfers", title="Total Number of Transfers By Path Type", hole=0.5, color="Path Type")
-fig_donut_txn.update_traces(textposition='inside', textinfo='percent+label', pull=[0.05]*len(df_path_type_stats))
-fig_donut_txn.update_layout(showlegend=True, legend=dict(orientation="v", y=0.5, x=1.1))
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.plotly_chart(fig_donut_volume, use_container_width=True)
-
-with col2:
-    st.plotly_chart(fig_donut_txn, use_container_width=True)
-    
-# --- Chart: Row 9 -------------------------------------------------------------------------------------------------------------------------------------------------------
-bar_fig = px.bar(df_path_type_stats, x="Path Type", y="Number of Users", title="Total Number of Users By Path Type", color_discrete_sequence=["blue"])
-bar_fig.update_layout(xaxis_title="", yaxis_title="wallet count", bargap=0.2)
-bar_fig.update_traces(text=df_path_type_stats["Number of Users"], texttemplate='%{text}', textposition='outside', showlegend=False)    
-st.plotly_chart(bar_fig, use_container_width=True)
-
+    st.plotly_chart(
+        fig4,
+        use_container_width=True
+    )
