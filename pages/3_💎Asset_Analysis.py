@@ -208,8 +208,6 @@ if not results:
 
 full_df = pd.concat(results, ignore_index=True, sort=False)
 full_df = full_df.set_index("timestamp")
-
-# --- تغییر برای XRP: تقسیم مقادیر بر ۲ ---
 mask_xrp = full_df["token"].str.upper() == "XRP"
 full_df.loc[mask_xrp, ["num_txs", "volume"]] = full_df.loc[mask_xrp, ["num_txs", "volume"]] / 2
 # ------------------------------------------
