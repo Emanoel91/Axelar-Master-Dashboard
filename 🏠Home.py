@@ -116,7 +116,7 @@ st.sidebar.markdown(
         </div>
         <div style="margin-top: 5px;">
             <a href="https://x.com/0xeman_raz" target="_blank">
-                <img src="https://pbs.twimg.com/profile_images/1841479747332608000/bindDGZQ_400x400.jpg" alt="Eman Raz">
+                <img src="https://pbs.twimg.com/profile_images/2060406047391559681/sA9zPNKM_400x400.jpg" alt="Eman Raz">
                 Built by Eman Raz
             </a>
         </div>
