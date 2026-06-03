@@ -25,8 +25,8 @@ st.sidebar.markdown(
         width: 250px;
         font-size: 13px;
         color: gray;
-        margin-left: 5px;
-        text-align: left;
+        margin-left: 5px; # -- MOVE LEFT
+        text-align: left;  
     }
     .sidebar-footer img {
         width: 16px;
@@ -44,20 +44,19 @@ st.sidebar.markdown(
     <div class="sidebar-footer">
         <div>
             <a href="https://x.com/axelar" target="_blank">
-                <img src="https://img.cryptorank.io/coins/axelar1663924228506.png">
+                <img src="https://img.cryptorank.io/coins/axelar1663924228506.png" alt="Axelar Logo">
                 Powered by Axelar
             </a>
         </div>
-
-        <div style="margin-top:5px;">
+        <div style="margin-top: 5px;">
             <a href="https://x.com/0xeman_raz" target="_blank">
-                <img src="https://pbs.twimg.com/profile_images/1841479747332608000/bindDGZQ_400x400.jpg">
+                <img src="https://pbs.twimg.com/profile_images/2060406047391559681/sA9zPNKM_400x400.jpg" alt="Eman Raz">
                 Built by Eman Raz
             </a>
         </div>
     </div>
     """,
-    unsafe_allow_html=True,
+    unsafe_allow_html=True
 )
 
 # =====================================================
