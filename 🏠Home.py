@@ -35,15 +35,15 @@ st.markdown(
 # --- Info Box ---
 st.markdown(
     """
-    <div style="background-color: #a3fcbc; padding: 15px; border-radius: 10px; border: 1px solid #a3fcbc;">
-        <b>Axelar</b> is a <b>decentralized, permissionless blockchain protocol</b> that facilitates 
-        <b>cross-chain interoperability</b>, enabling seamless communication and <b>asset transfers</b> 
-        between different blockchains. 
-        This <b>dashboard</b> provides an evaluation of <b>Axelar’s cross-chain services</b>, 
-        including <b>General Message Passing (GMP)</b> and <b>Token Transfers</b>. 
-        It examines the underlying <b>GMP smart contracts</b>, analyzes the growing adoption of 
-        <b>Axelar’s Interchain Token Service (ITS)</b>, and reviews <b>on-chain data</b> from established 
-        platforms built on Axelar, such as <b>Squid</b> and <b>Satellite</b>.
+    <div style="background-color: #ffaf77; padding: 15px; border-radius: 10px; border: 1px solid #ffaf77;">
+        This <b>Axelar Dashboard</b> provides a comprehensive view of the <b>Axelar ecosystem</b>, 
+        enabling in-depth analysis of <b>cross-chain activity</b>, <b>token transfers</b>, and 
+        <b>network performance</b>. It covers key areas including <b>GMP & Token Transfers</b>, 
+        <b>Path Analysis</b>, <b>Asset Analysis</b>, <b>Interchain Token Service (ITS)</b>, 
+        <b>Contract & User Analytics</b>, <b>TVL</b>, <b>AXL Staking</b>, and overall 
+        <b>network insights</b>. Through interactive visualizations and on-chain data exploration, 
+        the dashboard helps researchers, analysts, and ecosystem participants better understand 
+        the adoption, usage patterns, and growth of Axelar’s interchain infrastructure.
     </div>
     """,
     unsafe_allow_html=True
